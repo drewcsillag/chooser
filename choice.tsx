@@ -36,7 +36,7 @@ export class Chooser {
       return retind;
     }
 
-    for (let i = 0; i < numArgs; i++) {
+    for (let i = 1; i < numArgs; i++) {
       const execution = [...this.preChosen, ...this.newChoices, i];
       this.runner.addExecution(execution);
     }
