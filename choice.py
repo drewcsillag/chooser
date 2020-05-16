@@ -42,9 +42,10 @@ class ChoiceRunner(object):
 def f(c):
 
     c1 = c.choose(0, 1)
-    c2 = c.choose(0,1 )
-    c3 = c.choose(0,1)
-    print("%r %r %r" % (c1, c2, c3))
+    c2 = c.choose(0, 1)
+    c3 = c.choose(0, 1)
+    c4 = c.choose(0, 1)
+    print("%r %r %r %r" % (c1, c2, c3, c4))
 
 runner=ChoiceRunner()
 runner.run(f)
