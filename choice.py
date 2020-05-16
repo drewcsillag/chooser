@@ -45,10 +45,10 @@ def test_solve_magic_square(chooser, counterbox):
         c = chooser.choose(left)
         left.remove(c)
         square.append(c)
-        if i == 2 and square[0] + square[1] + square[2] != 15:
-            return
-        elif i == 5 and square[3] + square[4] + square[5] != 15:
-            return
+        # if i == 2 and square[0] + square[1] + square[2] != 15:
+        #     return
+        # elif i == 5 and square[3] + square[4] + square[5] != 15:
+        #     return
 
     if i == 8 and square[6] + square[7] + square[8] != 15:
         return
