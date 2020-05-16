@@ -106,7 +106,7 @@ def test_binary_counter(c):
 
 if __name__ == "__main__":
     runner = ChoiceRunner()
-    # counterbox = [0, 0]
-    # runner.run(lambda chooser: test_solve_magic_square(chooser, counterbox))
-    # print("solutions, total executions:", counterbox)
-    runner.run(test_binary_counter)
+    counterbox = [0, 0]
+    runner.run(lambda chooser: test_solve_magic_square(chooser, counterbox))
+    print("solutions, total executions:", counterbox)
+    # runner.run(test_binary_counter)
