@@ -5,22 +5,26 @@ class Chooser(object):
         self.index = 0
         self.newChoices = []
 
-    def choose(self, args):
+    def choose_index(self, args):
         if self.index < len(self.prechosen):
             retind = self.prechosen[self.index]
             self.index += 1
-            return args[retind]
+            return retind
         else:
             for i in range(1, len(args)):
                 execution = self.prechosen + self.newChoices + [i]
                 self.runner.executions.append(execution)
             self.newChoices.append(0)
-            return args[0]
+            return 0
+
+    def choose(self, args):
+        return args[self.choose_index(args)]
 
     def pick(self, l):
-        c = self.choose(l)
-        l.remove(c)
-        return c
+        c = self.choose_index(l)
+        ret = l[c]
+        del l[c]
+        return ret
 
     def stop(self):
         self.runner.stop()
@@ -100,9 +104,11 @@ def test_solve_magic_square(c, counterbox):
     counterbox[0] += 1
     # chooser.stop() # to stop at first solution
 
+
 def test_binary_counter(c):
-    l= [c.choose([0,1]) for i in range(3)]
+    l = [c.choose([0, 1]) for i in range(3)]
     print(l)
+
 
 if __name__ == "__main__":
     runner = ChoiceRunner()
