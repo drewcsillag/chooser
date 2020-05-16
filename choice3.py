@@ -7,15 +7,20 @@ class Chooser(object):
 
     def choose(self, args):
         if self.index < len(self.prechosen):
-            ret = self.prechosen[self.index]
+            retind = self.prechosen[self.index]
             self.index += 1
-            return ret
+            return args[retind]
         else:
-            for i in args[1:]:
+            for i in range(1, len(args)):
                 execution = self.prechosen + self.newChoices + [i]
                 self.runner.executions.append(execution)
-            self.newChoices.append(args[0])
+            self.newChoices.append(0)
             return args[0]
+
+    def pick(self, l):
+        c = self.choose(l)
+        l.remove(c)
+        return c
 
     def stop(self):
         self.runner.stop()
@@ -38,29 +43,50 @@ class ChoiceRunner(object):
         self.executions = []
 
 
-def test_solve_magic_square(chooser, counterbox):
+def test_solve_magic_square(c, counterbox):
     left = [1, 2, 3, 4, 5, 6, 7, 8, 9]
     square = []
     counterbox[1] += 1
+    # 0
+    square.append(c.pick(left))
 
-    for i in range(9):
-        c = chooser.choose(left)
-        left.remove(c)
-        square.append(c)
+    # 1
+    square.append(c.pick(left))
+
+    # 2
+    square.append(c.pick(left))
 
     if square[0] + square[1] + square[2] != 15:
         return
-    elif square[3] + square[4] + square[5] != 15:
+
+    # 3
+    square.append(c.pick(left))
+
+    # 4
+    square.append(c.pick(left))
+
+    # 5
+    square.append(c.pick(left))
+    if square[3] + square[4] + square[5] != 15:
         return
-    elif (
+
+    # 6
+    square.append(c.pick(left))
+    if (
         square[0] + square[3] + square[6] != 15
         or square[2] + square[4] + square[6] != 15
     ):
         return
-    elif square[1] + square[4] + square[7] != 15:
+
+    # 7
+    square.append(c.pick(left))
+    if square[1] + square[4] + square[7] != 15:
         return
 
-    elif square[6] + square[7] + square[8] != 15:
+    # 8
+    square.append(c.pick(left))
+
+    if square[6] + square[7] + square[8] != 15:
         return
     elif square[2] + square[5] + square[8] != 15:
         return
@@ -74,9 +100,13 @@ def test_solve_magic_square(chooser, counterbox):
     counterbox[0] += 1
     # chooser.stop() # to stop at first solution
 
+def test_binary_counter(c):
+    l= [c.choose([0,1]) for i in range(3)]
+    print(l)
 
 if __name__ == "__main__":
     runner = ChoiceRunner()
-    counterbox = [0, 0]
-    runner.run(lambda chooser: test_solve_magic_square(chooser, counterbox))
-    print("solutions", counterbox)
+    # counterbox = [0, 0]
+    # runner.run(lambda chooser: test_solve_magic_square(chooser, counterbox))
+    # print("solutions, total executions:", counterbox)
+    runner.run(test_binary_counter)
