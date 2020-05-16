@@ -2,29 +2,23 @@ export class ChoiceRunner {
   private executions: number[][] = [];
 
   public run(fn: (c: Chooser) => void): void {
-    const firstChooser = new Chooser(this, []);
-    fn(firstChooser);
+    // Run it once to see if we get any executions
+    fn(new Chooser(this.executions, []));
     while (this.executions.length > 0) {
-      const execution = this.executions.pop();
-      const chooser = new Chooser(this, execution);
-      fn(chooser);
+      fn(new Chooser(this.executions, this.executions.pop()));
     }
-  }
-
-  public addExecution(execution: number[]): void {
-    this.executions.push(execution);
   }
 }
 
 export class Chooser {
-  private runner: ChoiceRunner;
+  private executions: number[][];
   private preChosen: number[];
   private index: number;
   private newChoices: number[];
 
-  constructor(runner: ChoiceRunner, prechosen: number[]) {
-    this.runner = runner;
-    this.preChosen = prechosen;
+  constructor(executions: number[][], preChosen: number[]) {
+    this.executions = executions;
+    this.preChosen = preChosen;
     this.index = 0;
     this.newChoices = [];
   }
@@ -37,16 +31,14 @@ export class Chooser {
     }
 
     for (let i = 1; i < numArgs; i++) {
-      const execution = [...this.preChosen, ...this.newChoices, i];
-      this.runner.addExecution(execution);
+      this.executions.push([...this.preChosen, ...this.newChoices, i]);
     }
     this.newChoices.push(0);
     return 0;
   }
 
   public choose<T>(l: T[]): T {
-    const ind = this.choose_index(l.length);
-    return l[ind];
+    return l[this.choose_index(l.length)];
   }
 
   public pick<T>(l: T[]): T {
@@ -106,8 +98,8 @@ function test_solve_magic_square(c: Chooser, counterbox: number[]) {
   console.log('');
   counterbox[0] += 1;
 }
-const runner = new ChoiceRunner();
-const counterbox = [0, 0];
-runner.run((c: Chooser) => test_solve_magic_square(c, counterbox));
-console.log('solutions, total executions:', counterbox);
-runner.run(test_binary_counter);
+const testRunner = new ChoiceRunner();
+const counterBox = [0, 0];
+testRunner.run((c: Chooser) => test_solve_magic_square(c, counterBox));
+console.log('solutions, total executions:', counterBox);
+testRunner.run(test_binary_counter);
