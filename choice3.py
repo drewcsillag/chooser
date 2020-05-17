@@ -4,7 +4,7 @@ T = TypeVar("T")
 
 
 class Chooser(object):
-    def __init__(self, runner: ChoiceRunner, prechosen: List[int]):
+    def __init__(self, runner: 'ChoiceRunner', prechosen: List[int]):
         self.runner = runner
         self.prechosen = prechosen
         self.index = 0

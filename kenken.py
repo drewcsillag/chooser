@@ -1,20 +1,28 @@
 import choice3
-
 from typing import List
 
-# C0  C1  C2  C3
-# C4  C5  C6  C7
-# C8  C9  C10 C11
-# C12 C13 C14 C15
+# +----+----+----+----+
+# |     16x | 7+      |
+# | (0)  (1)| (2)  (3)|
+# +----+-   +-   +----+
+# | 2- |    |    |  4 |
+# | (4)| (5)| (6)| (7)|
+# +   -+----+----+----+
+# |    |    | 2/      |
+# | (8)| (9)|(10) (11)|
+# +----+-   +----+----+
+# |     12x | 2/      |
+# |(12) (13)|(14) (15)|
+# +----+----+----+----+
 
 
-def subcheck(v1: int, v2: int, diff: int) -> bool:
+def sub_check(v1: int, v2: int, diff: int) -> bool:
     if v1 - v2 == diff or v2 - v1 == diff:
         return True
     return False
 
 
-def divcheck(v1: int, v2: int, quot: int) -> bool:
+def div_check(v1: int, v2: int, quot: int) -> bool:
     if v1 / v2 == quot or v2 / v1 == quot:
         return True
     return False
@@ -25,6 +33,7 @@ class NoChoices(Exception):
 
 
 def all_but(candidates: List[int], *used: int) -> List[int]:
+    """Return items in candidates that are not in used."""
     leftovers = set(candidates).difference(used)
     if not leftovers:
         raise NoChoices()
@@ -34,46 +43,51 @@ def all_but(candidates: List[int], *used: int) -> List[int]:
 ONE_TO_FOUR = [1, 2, 3, 4]
 
 
-def addChoice(row: List[int], c: choice3.Chooser, *used: int) -> None:
+def add_choice(row: List[int], c: choice3.Chooser, *used: int) -> None:
+    """Choose a item from [1-4] excluding ones that have been used already)
+    and append it to row."""
     row.append(c.choose(all_but(ONE_TO_FOUR, *used)))
 
 
 def kenken(c: choice3.Chooser, box: List[int]) -> None:
     box[0] += 1
 
-    oneToFour = [1, 2, 3, 4]  # 1st row
-    row = [c.pick(oneToFour) for i in range(4)]  # C0 - C3
+    row: List[int] = []
+    add_choice(row, c)
+    add_choice(row, c, row[0])
+    add_choice(row, c, row[0], row[1])
+    add_choice(row, c, row[0], row[1], row[2])
 
     try:
         # 2nd row
-        addChoice(row, c, 4, row[0])  # C4
-        addChoice(row, c, 4, row[1], row[4])  # C5
-        if row[0] * row[1] * row[5] != 16:
+        add_choice(row, c, 4, row[0])  # C4
+        add_choice(row, c, 4, row[1], row[4])
+        if row[0] * row[1] * row[5] != 16:  # 16x
             return
-        addChoice(row, c, 4, row[2], row[4], row[5])  # C6
-        if row[2] + row[3] + row[6] != 7:
+        add_choice(row, c, 4, row[2], row[4], row[5])
+        if row[2] + row[3] + row[6] != 7:  # 7+
             return
 
-        row.append(4)  # C7
+        row.append(4)  # 4
 
         # 3rd row
-        addChoice(row, c, row[0], row[4])  # C8
-        if not subcheck(row[8], row[4], 2):
+        add_choice(row, c, row[0], row[4])
+        if not sub_check(row[8], row[4], 2):  # 2-
             return
-        addChoice(row, c, row[1], row[5], row[8])  # C9
-        addChoice(row, c, row[2], row[6], row[8], row[9])  # C10
-        addChoice(row, c, row[3], row[7], row[8], row[9], row[10])  # C11
-        if not divcheck(row[10], row[11], 2):
+        add_choice(row, c, row[1], row[5], row[8])
+        add_choice(row, c, row[2], row[6], row[8], row[9])
+        add_choice(row, c, row[3], row[7], row[8], row[9], row[10])
+        if not div_check(row[10], row[11], 2):  # 2-
             return
 
         # 4th row
-        addChoice(row, c, row[0], row[4], row[8])  # C12
-        addChoice(row, c, row[1], row[5], row[9], row[12])  # C13
-        if row[9] * row[12] * row[13] != 12:
+        add_choice(row, c, row[0], row[4], row[8])
+        add_choice(row, c, row[1], row[5], row[9], row[12])
+        if row[9] * row[12] * row[13] != 12:  # 12x
             return
-        addChoice(row, c, row[2], row[6], row[10], row[12], row[13])  # C14
-        addChoice(row, c, row[3], row[7], row[11], row[12], row[13], row[14])  # C15
-        if not divcheck(row[14], row[15], 2):
+        add_choice(row, c, row[2], row[6], row[10], row[12], row[13])
+        add_choice(row, c, row[3], row[7], row[11], row[12], row[13], row[14])
+        if not div_check(row[14], row[15], 2):  # 2/
             return
 
         print(row)
