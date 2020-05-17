@@ -36,7 +36,7 @@ def all_but(candidates, *used):
 
 ONE_TO_FOUR = [1, 2, 3, 4]
 def addChoice(row: List[int], c: choice3.Chooser, *used: int):
-    row.append(c.choose(all_but(ONE_TO_FOUR, 4, *used)))
+    row.append(c.choose(all_but(ONE_TO_FOUR, *used)))
 
 def kenken(c: choice3.Chooser, box):
     box[0] += 1
