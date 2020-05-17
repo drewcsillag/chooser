@@ -1,45 +1,49 @@
+from typing import Callable, List, TypeVar
+
+T = TypeVar('T')
+
 class Chooser(object):
-    def __init__(self, runner, prechosen):
+    def __init__(self, runner: ChoiceRunner, prechosen: List[int]):
         self.runner = runner
         self.prechosen = prechosen
         self.index = 0
-        self.newChoices = []
+        self.newChoices: List[int] = []
 
-    def choose_index(self, args):
+    def choose_index(self, numArgs: int) -> int:
         if self.index < len(self.prechosen):
             retind = self.prechosen[self.index]
             self.index += 1
             return retind
 
-        for i in range(1, len(args)):
+        for i in range(1, numArgs):
             execution = self.prechosen + self.newChoices + [i]
             self.runner.executions.append(execution)
         self.newChoices.append(0)
         return 0
 
-    def choose(self, args):
+    def choose(self, args: List[T]) -> T:
         try:
-            index = self.choose_index(args)
+            index = self.choose_index(len(args))
             return args[index]
         except IndexError:
             print("trying index %d of %r" % (index, args))
             raise
 
-    def pick(self, l):
-        c = self.choose_index(l)
+    def pick(self, l: List[T]) -> T:
+        c = self.choose_index(len(l))
         ret = l[c]
         del l[c]
         return ret
 
-    def stop(self):
+    def stop(self) -> None:
         self.runner.executions[:] =[]
 
 
 class ChoiceRunner(object):
-    def __init__(self):
-        self.executions = []
+    def __init__(self) -> None:
+        self.executions: List[List[int]] = []
 
-    def run(self, fn):
+    def run(self, fn: Callable[[Chooser], None]) -> None:
         chooser = Chooser(self, [])
         fn(chooser)
         while self.executions:
@@ -49,7 +53,7 @@ class ChoiceRunner(object):
             fn(chooser)
 
 
-def test_solve_magic_square(c, counterbox):
+def test_solve_magic_square(c: Chooser, counterbox: List[int]) -> None:
     left = [1, 2, 3, 4, 5, 6, 7, 8, 9]
     square = []
     counterbox[1] += 1
@@ -93,7 +97,7 @@ def test_solve_magic_square(c, counterbox):
     # chooser.stop() # to stop at first solution
 
 
-def test_binary_counter(c):
+def test_binary_counter(c: Chooser) -> None:
     print([c.choose([0, 1]) for i in range(3)])
 
 

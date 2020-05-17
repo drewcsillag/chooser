@@ -8,13 +8,13 @@ from typing import List
 # C12 C13 C14 C15
 
 
-def subcheck(v1, v2, diff):
+def subcheck(v1: int, v2: int, diff: int) -> bool:
     if v1 - v2 == diff or v2 - v1 == diff:
         return True
     return False
 
 
-def divcheck(v1, v2, quot):
+def divcheck(v1: int, v2:int, quot: int) -> bool:
     if v1 / v2 == quot or v2 / v1 == quot:
         return True
     return False
@@ -24,7 +24,7 @@ class NoChoices(Exception):
     pass
 
 
-def all_but(candidates, *used):
+def all_but(candidates: List[int], *used: int) -> List[int]:
     leftovers = set(candidates).difference(used)
     if not leftovers:
         raise NoChoices()
@@ -34,11 +34,11 @@ def all_but(candidates, *used):
 ONE_TO_FOUR = [1, 2, 3, 4]
 
 
-def addChoice(row: List[int], c: choice3.Chooser, *used: int):
+def addChoice(row: List[int], c: choice3.Chooser, *used: int) -> None:
     row.append(c.choose(all_but(ONE_TO_FOUR, *used)))
 
 
-def kenken(c: choice3.Chooser, box):
+def kenken(c: choice3.Chooser, box: List[int]) -> None:
     box[0] += 1
 
     oneToFour = [1, 2, 3, 4]  # 1st row
