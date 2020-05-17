@@ -4,8 +4,8 @@ T = TypeVar("T")
 
 
 class Chooser(object):
-    def __init__(self, runner: 'ChoiceRunner', prechosen: List[int]):
-        self.runner = runner
+    def __init__(self, executions: List[List[int]], prechosen: List[int]):
+        self.executions = executions
         self.prechosen = prechosen
         self.index = 0
         self.newChoices: List[int] = []
@@ -18,7 +18,7 @@ class Chooser(object):
 
         for i in range(1, numArgs):
             execution = self.prechosen + self.newChoices + [i]
-            self.runner.executions.append(execution)
+            self.executions.append(execution)
         self.newChoices.append(0)
         return 0
 
@@ -37,7 +37,7 @@ class Chooser(object):
         return ret
 
     def stop(self) -> None:
-        self.runner.executions[:] = []
+        self.executions[:] = []
 
 
 class ChoiceRunner(object):
@@ -45,11 +45,11 @@ class ChoiceRunner(object):
         self.executions: List[List[int]] = []
 
     def run(self, fn: Callable[[Chooser], None]) -> None:
-        chooser = Chooser(self, [])
+        chooser = Chooser(self.executions, [])
         fn(chooser)
         while self.executions:
             execution = self.executions[-1]
-            chooser = Chooser(self, execution)
+            chooser = Chooser(self.executions, execution)
             self.executions = self.executions[:-1]
             fn(chooser)
 
