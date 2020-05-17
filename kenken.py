@@ -48,10 +48,8 @@ def kenken(c: choice3.Chooser, box):
         # 2nd row
         addChoice(row, c, 4, row[0]) # C4
         addChoice(row, c, 4, row[1], row[4])  #C5
-
         if row[0] * row[1] * row[5] != 16:
             return
-
         addChoice(row, c, 4, row[2], row[4], row[5]) #C6
         if row[2] + row[3] + row[6] != 7:
             return
@@ -62,7 +60,6 @@ def kenken(c: choice3.Chooser, box):
         addChoice(row, c, row[0], row[4])  # C8
         if not subcheck(row[8], row[4], 2):
             return
-
         addChoice(row, c, row[1], row[5], row[8])  # C9
         addChoice(row, c, row[2], row[6], row[8], row[9])  # C10
         addChoice(row, c, row[3], row[7], row[8], row[9], row[10]) # C11
