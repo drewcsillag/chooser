@@ -1,4 +1,4 @@
-import choice3
+from choice import Chooser, ChoiceRunner
 from typing import List
 
 # +----+----+----+----+
@@ -43,13 +43,13 @@ def all_but(candidates: List[int], *used: int) -> List[int]:
 ONE_TO_FOUR = [1, 2, 3, 4]
 
 
-def add_choice(row: List[int], c: choice3.Chooser, *used: int) -> None:
+def add_choice(row: List[int], c: Chooser, *used: int) -> None:
     """Choose a item from [1-4] excluding ones that have been used already)
     and append it to row."""
     row.append(c.choose(all_but(ONE_TO_FOUR, *used)))
 
 
-def kenken(c: choice3.Chooser, box: List[int]) -> None:
+def kenken(c: Chooser, box: List[int]) -> None:
     box[0] += 1
 
     row: List[int] = []
@@ -100,7 +100,7 @@ def kenken(c: choice3.Chooser, box: List[int]) -> None:
 
 
 box = [0]
-c = choice3.ChoiceRunner()
+c = ChoiceRunner()
 c.run(lambda c: kenken(c, box))
 print(box)
 
