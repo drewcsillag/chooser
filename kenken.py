@@ -14,7 +14,7 @@ def subcheck(v1: int, v2: int, diff: int) -> bool:
     return False
 
 
-def divcheck(v1: int, v2:int, quot: int) -> bool:
+def divcheck(v1: int, v2: int, quot: int) -> bool:
     if v1 / v2 == quot or v2 / v1 == quot:
         return True
     return False

@@ -1,6 +1,7 @@
 from typing import Callable, List, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class Chooser(object):
     def __init__(self, runner: ChoiceRunner, prechosen: List[int]):
@@ -36,7 +37,7 @@ class Chooser(object):
         return ret
 
     def stop(self) -> None:
-        self.runner.executions[:] =[]
+        self.runner.executions[:] = []
 
 
 class ChoiceRunner(object):
