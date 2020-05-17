@@ -1,9 +1,10 @@
 import choice3
 
-# C1 C2 C3 C4
-# C5 C6 C7 C8
-# C9 C10 C11 C12
-# C13 C14 C15 C16
+from typing import List
+# C0  C1  C2  C3
+# C4  C5  C6  C7
+# C8  C9  C10 C11
+# C12 C13 C14 C15
 
 
 def subcheck(v1, v2, diff):
@@ -33,50 +34,48 @@ def all_but(candidates, *used):
     return [c for c in candidates if c in leftovers]
 
 
+ONE_TO_FOUR = [1, 2, 3, 4]
+def addChoice(row: List[int], c: choice3.Chooser, *used: int):
+    row.append(c.choose(all_but(ONE_TO_FOUR, 4, *used)))
+
 def kenken(c: choice3.Chooser, box):
     box[0] += 1
 
     oneToFour = [1, 2, 3, 4]  # 1st row
-    row = [c.pick(oneToFour) for i in range(4)]  # C1 - C4
-    oneToFour = [1, 2, 3, 4]
+    row = [c.pick(oneToFour) for i in range(4)]  # C0 - C3
 
     try:
         # 2nd row
-        row.append(c.choose(all_but(oneToFour, 4, row[0])))  # C5
-        row.append(c.choose(all_but(oneToFour, 4, row[4], row[1])))  # C6
+        addChoice(row, c, 4, row[0]) # C4
+        addChoice(row, c, 4, row[1], row[4])  #C5
 
         if row[0] * row[1] * row[5] != 16:
             return
 
-        row.append(c.choose(all_but(oneToFour, 4, row[4], row[5], row[2])))
+        addChoice(row, c, 4, row[2], row[4], row[5]) #C6
         if row[2] + row[3] + row[6] != 7:
             return
 
-        row.append(4)
+        row.append(4) #C7
 
         # 3rd row
-        row.append(c.choose(all_but(oneToFour, row[0], row[4])))  # C9
+        addChoice(row, c, row[0], row[4])  # C8
         if not subcheck(row[8], row[4], 2):
             return
 
-        row.append(c.choose(all_but(oneToFour, row[1], row[5], row[8])))  # C10
-        row.append(c.choose(all_but(oneToFour, row[2], row[6], row[8], row[9])))  # C11
-        row.append(c.choose(all_but(oneToFour, row[3], row[7], row[8], row[9], row[10])))  # C12
+        addChoice(row, c, row[1], row[5], row[8])  # C9
+        addChoice(row, c, row[2], row[6], row[8], row[9])  # C10
+        addChoice(row, c, row[3], row[7], row[8], row[9], row[10]) # C11
         if not divcheck(row[10], row[11], 2):
             return
 
         # 4th row
-        row.append(c.choose(all_but(oneToFour, row[0], row[4], row[8])))  # C13
-        row.append(c.choose(all_but(oneToFour, row[1], row[5], row[9], row[12])))  # C14
+        addChoice(row, c, row[0], row[4], row[8])  # C12
+        addChoice(row, c, row[1], row[5], row[9], row[12])  # C13
         if row[9] * row[12] * row[13] != 12:
             return
-        row.append(
-            c.choose(all_but(oneToFour, row[2], row[6], row[10], row[12], row[13]))
-        )  # C15
-        row.append(
-            c.choose(all_but(oneToFour, row[3], row[7], row[11], row[12], row[13], row[14]))
-        )  # C16
-        #row.append(c.pick(oneToFour))  # C15
+        addChoice(row, c, row[2], row[6], row[10], row[12], row[13])  # C14
+        addChoice(row, c, row[3], row[7], row[11], row[12], row[13], row[14]) # C15
         if not divcheck(row[14], row[15], 2):
             return
 
@@ -93,3 +92,5 @@ box = [0]
 c = choice3.ChoiceRunner()
 c.run(lambda c: kenken(c, box))
 print(box)
+
+# [2, 4, 1, 3, 1, 2, 3, 4, 3, 1, 4, 2, 4, 3, 2, 1, 1]
