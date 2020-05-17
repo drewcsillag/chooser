@@ -1,7 +1,6 @@
 // package com.thecsillags;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -21,17 +20,18 @@ public class ChoiceRunner {
     public static class Chooser {
         private final Deque<List<Integer>> executions;
         private final List<Integer> preChosen;
-        private int index;
         private final ArrayList<Integer> newChoices;
 
-        public Chooser(Deque<List<Integer>> executions, List<Integer> preChosen) {
+        private int index;
+
+        public Chooser(final Deque<List<Integer>> executions, final List<Integer> preChosen) {
             this.executions = executions;
             this.preChosen = preChosen;
             this.index = 0;
             this.newChoices = new ArrayList<Integer>();
         }
 
-        public int chooseIndex(int numArgs) {
+        public int chooseIndex(final int numArgs) {
             if (index < preChosen.size()) {
                 final int retind = preChosen.get(index);
                 index++;
@@ -49,15 +49,15 @@ public class ChoiceRunner {
             return 0;
         }
 
-        <T> T chooseArg(T... choices) {
+        <T> T chooseArg(final T... choices) {
             return choices[chooseIndex(choices.length)];
         }
 
-        <T> T choose(List<T> choices) {
+        <T> T choose(final List<T> choices) {
             return choices.get(chooseIndex(choices.size()));
         }
 
-        <T> T pick(List<T> choices) {
+        <T> T pick(final List<T> choices) {
             final int ind = chooseIndex(choices.size());
             final T ret = choices.get(ind);
             choices.remove(ind);
@@ -65,18 +65,12 @@ public class ChoiceRunner {
         }
     }
 
-    private static void testMagicSquare(Chooser c, int[] counterbox) {
-        List<Integer> l = new ArrayList<>();
-        l.add(1);
-        l.add(2);
-        l.add(3);
-        l.add(4);
-        l.add(5);
-        l.add(6);
-        l.add(7);
-        l.add(8);
-        l.add(9);
-        List<Integer> square = new ArrayList<>();
+    private static void testMagicSquare(final Chooser c, final int[] counterbox) {
+        final List<Integer> l = new ArrayList<>();
+        for (int i = 1; i <= 9; i++) {
+            l.add(i);
+        }
+        final List<Integer> square = new ArrayList<>();
         counterbox[1]++;
 
         square.add(c.pick(l));
@@ -121,7 +115,7 @@ public class ChoiceRunner {
         counterbox[0]+=1;
     }
 
-    public static void main(String... args) {
+    public static void main(final String... ignoredArgs) {
         final ChoiceRunner r=new ChoiceRunner();
         r.run((c) -> {
             System.out.println("" + c.chooseArg(0,1) + "" + + c.chooseArg(0,1) + "" + c.chooseArg(0,1));

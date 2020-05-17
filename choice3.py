@@ -18,7 +18,12 @@ class Chooser(object):
         return 0
 
     def choose(self, args):
-        return args[self.choose_index(args)]
+        try:
+            index = self.choose_index(args)
+            return args[index]
+        except IndexError:
+            print("trying index %d of %r" % (index, args))
+            raise
 
     def pick(self, l):
         c = self.choose_index(l)
@@ -27,7 +32,7 @@ class Chooser(object):
         return ret
 
     def stop(self):
-        self.runner.stop()
+        self.runner.executions[:] =[]
 
 
 class ChoiceRunner(object):
