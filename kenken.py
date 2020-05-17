@@ -76,7 +76,7 @@ def kenken(c: choice3.Chooser, box):
         row.append(
             c.choose(all_but(oneToFour, row[3], row[7], row[11], row[12], row[13], row[14]))
         )  # C16
-        row.append(c.pick(oneToFour))  # C15
+        #row.append(c.pick(oneToFour))  # C15
         if not divcheck(row[14], row[15], 2):
             return
 
