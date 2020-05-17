@@ -9,17 +9,13 @@ from typing import List
 
 
 def subcheck(v1, v2, diff):
-    if v1 - v2 == diff:
-        return True
-    if v2 - v1 == diff:
+    if v1 - v2 == diff or v2 - v1 == diff:
         return True
     return False
 
 
 def divcheck(v1, v2, quot):
-    if v1 / v2 == quot:
-        return True
-    if v2 / v1 == quot:
+    if v1 / v2 == quot or v2 / v1 == quot:
         return True
     return False
 
@@ -95,3 +91,8 @@ c.run(lambda c: kenken(c, box))
 print(box)
 
 # [2, 4, 1, 3, 1, 2, 3, 4, 3, 1, 4, 2, 4, 3, 2, 1, 1]
+# [2, 4, 1, 3]
+# [1, 2, 3, 4]
+# [3, 1, 4, 2]
+# [4, 3, 2, 1]
+# [72]
