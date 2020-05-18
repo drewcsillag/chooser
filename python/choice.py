@@ -50,7 +50,7 @@ class ChoiceRunner(object):
         while self.executions:
             execution = self.executions[-1]
             chooser = Chooser(self.executions, execution)
-            self.executions = self.executions[:-1]
+            self.executions[:] = self.executions[:-1]
             fn(chooser)
 
 
