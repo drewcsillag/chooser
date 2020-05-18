@@ -1,4 +1,4 @@
-// package com.thecsillags;
+package com.thecsillags.choice;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -9,7 +9,7 @@ import java.util.Deque;
 public class ChoiceRunner {
     private final Deque<List<Integer>> executions=new ArrayDeque<>();
 
-    public void run(Consumer<Chooser> fn) {
+    public void run(final Consumer<Chooser> fn) {
         fn.accept(new Chooser(executions, new ArrayList<>()));
         while (!executions.isEmpty()) {
             fn.accept(new Chooser(executions, executions.pop()));
@@ -117,9 +117,6 @@ public class ChoiceRunner {
 
     public static void main(final String... ignoredArgs) {
         final ChoiceRunner r=new ChoiceRunner();
-        r.run((c) -> {
-            System.out.println("" + c.chooseArg(0,1) + "" + + c.chooseArg(0,1) + "" + c.chooseArg(0,1));
-        });
         final int[] counterbox = new int[]{0, 0};
         r.run((c)->testMagicSquare(c, counterbox));
         System.out.println("solutions, total executions: " + counterbox[0] + ", " + counterbox[1]);
