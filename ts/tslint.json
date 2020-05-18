@@ -1,0 +1,21 @@
+{
+  "defaultSeverity": "warn",
+  "extends": ["tslint:recommended", "tslint-react"],
+  "jsRules": {
+    "quotemark": [true, "single"],
+    "no-console": false
+  },
+  "rules": {
+    "quotemark": [true, "jsx-double", "single", "avoid-escape"],
+    "arrow-parens": false,
+    "object-literal-sort-keys": false,
+    "interface-name": false,
+    "trailing-comma": {
+      "multiline": ["objects", "arrays", "typeLiterals"]
+    },
+    "no-console": false,
+    "max-classes-per-file": false,
+    "jsx-no-multiline-js": false
+  },
+  "rulesDirectory": []
+}
