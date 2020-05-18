@@ -49,11 +49,6 @@ export class Chooser {
   }
 }
 
-function test_binary_counter(c: Chooser) {
-  const l = [c.choose([0, 1]), c.choose([0, 1]), c.choose([0, 1])];
-  console.log(l);
-}
-
 function test_solve_magic_square(c: Chooser, counterbox: number[]) {
   const left = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const square = [];
@@ -102,4 +97,4 @@ const testRunner = new ChoiceRunner();
 const counterBox = [0, 0];
 testRunner.run((c: Chooser) => test_solve_magic_square(c, counterBox));
 console.log('solutions, total executions:', counterBox);
-testRunner.run(test_binary_counter);
+testRunner.run((c) => console.log([c.choose([0, 1]), c.choose([0, 1]), c.choose([0, 1])]));

@@ -12,7 +12,7 @@ var ChoiceRunner = /** @class */ (function () {
         this.executions = [];
     }
     ChoiceRunner.prototype.run = function (fn) {
-        // Run it once to populate at least one execution
+        // Run it once to see if we get any executions
         fn(new Chooser(this.executions, []));
         while (this.executions.length > 0) {
             fn(new Chooser(this.executions, this.executions.pop()));
@@ -41,8 +41,7 @@ var Chooser = /** @class */ (function () {
         return 0;
     };
     Chooser.prototype.choose = function (l) {
-        var ind = this.choose_index(l.length);
-        return l[ind];
+        return l[this.choose_index(l.length)];
     };
     Chooser.prototype.pick = function (l) {
         var ind = this.choose_index(l.length);
@@ -53,10 +52,6 @@ var Chooser = /** @class */ (function () {
     return Chooser;
 }());
 exports.Chooser = Chooser;
-function test_binary_counter(c) {
-    var l = [c.choose([0, 1]), c.choose([0, 1]), c.choose([0, 1])];
-    console.log(l);
-}
 function test_solve_magic_square(c, counterbox) {
     var left = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     var square = [];
@@ -97,4 +92,4 @@ var testRunner = new ChoiceRunner();
 var counterBox = [0, 0];
 testRunner.run(function (c) { return test_solve_magic_square(c, counterBox); });
 console.log('solutions, total executions:', counterBox);
-testRunner.run(test_binary_counter);
+testRunner.run(function (c) { return console.log([c.choose([0, 1]), c.choose([0, 1]), c.choose([0, 1])]); });

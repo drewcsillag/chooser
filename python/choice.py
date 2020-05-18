@@ -17,8 +17,7 @@ class Chooser(object):
             return retind
 
         for i in range(1, numArgs):
-            execution = self.prechosen + self.newChoices + [i]
-            self.executions.append(execution)
+            self.executions.append(self.prechosen + self.newChoices + [i])
         self.newChoices.append(0)
         return 0
 
@@ -44,12 +43,9 @@ class ChoiceRunner(object):
         self.executions: List[List[int]] = []
 
     def run(self, fn: Callable[[Chooser], None]) -> None:
-        chooser = Chooser(self.executions, [])
-        fn(chooser)
+        fn(Chooser(self.executions, []))
         while self.executions:
-            execution = self.executions.pop()
-            chooser = Chooser(self.executions, execution)
-            fn(chooser)
+            fn(Chooser(self.executions, self.executions.pop()))
 
 
 def test_solve_magic_square(c: Chooser, counterbox: List[int]) -> None:
