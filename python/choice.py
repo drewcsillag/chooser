@@ -24,8 +24,7 @@ class Chooser(object):
 
     def choose(self, args: List[T]) -> T:
         try:
-            index = self.choose_index(len(args))
-            return args[index]
+            return args[self.choose_index(len(args))]
         except IndexError:
             print("trying index %d of %r" % (index, args))
             raise
@@ -48,9 +47,8 @@ class ChoiceRunner(object):
         chooser = Chooser(self.executions, [])
         fn(chooser)
         while self.executions:
-            execution = self.executions[-1]
+            execution = self.executions.pop()
             chooser = Chooser(self.executions, execution)
-            self.executions[:] = self.executions[:-1]
             fn(chooser)
 
 
