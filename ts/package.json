@@ -50,7 +50,7 @@
     "jest": "^23.6.0",
     "jest-expect-message": "^1.0.2",
     "less": "^3.9.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.13",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",
     "react-redux": "^6.0.0",
