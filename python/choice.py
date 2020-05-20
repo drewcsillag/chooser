@@ -23,7 +23,8 @@ class Chooser(object):
 
     def choose(self, args: List[T]) -> T:
         try:
-            return args[self.choose_index(len(args))]
+            index = self.choose_index(len(args))
+            return args[index]
         except IndexError:
             print("trying index %d of %r" % (index, args))
             raise

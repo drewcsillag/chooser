@@ -1,18 +1,27 @@
 from choice import ChoiceRunner, Chooser
-from typing import Set, List
-def computeBoxIndex(row, column):
-    boxrow = row//3
-    boxcol = column//3
+from typing import Set, List, Tuple
+
+
+def computeBoxIndex(row: int, column: int) -> int:
+    boxrow = row // 3
+    boxcol = column // 3
     return boxrow * 3 + boxcol
 
-boxIndex = []
+
+boxIndex: List[List[int]] = []
 for row in range(9):
-    rbi = []
+    rbi : List[int] = []
     boxIndex.append(rbi)
     for column in range(9):
         rbi.append(computeBoxIndex(row, column))
 
-def addTo(row, column, number, sets):
+
+def addTo(row: int, column: int, number: int,
+sets: Tuple[
+     List[Set[int]],
+      List[Set[int]],
+      List[Set[int]]
+      ]) -> None:
     rows, columns, boxes = sets
 
     rows[row].add(number)
@@ -20,10 +29,11 @@ def addTo(row, column, number, sets):
 
     boxes[boxIndex[row][column]].add(number)
 
-def init_indexes(board) -> (List[Set[int]], List[Set[int]], List[Set[int]]):
-    rows = [set() for i in range(9)]
-    cols = [set() for i in range(9)]
-    boxes = [set() for i in range(9)]
+
+def init_indexes(board: List[List[int]]) -> Tuple[List[Set[int]], List[Set[int]], List[Set[int]]]:
+    rows:List[Set[int]] = [set() for i in range(9)]
+    cols:List[Set[int]] = [set() for i in range(9)]
+    boxes:List[Set[int]] = [set() for i in range(9)]
     for row in range(9):
         for col in range(9):
             number = board[row][col]
@@ -33,25 +43,28 @@ def init_indexes(board) -> (List[Set[int]], List[Set[int]], List[Set[int]]):
                 boxes[boxIndex[row][col]].add(number)
     return rows, cols, boxes
 
-def canSee(row, column, sets):
+
+def canSee(row: int, column: int, sets: Tuple[List[Set[int]], List[Set[int]], List[Set[int]]]) -> List[int]:
     rows, columns, boxes = sets
     res = set(rows[row])
     res.update(columns[column])
     res.update(boxes[boxIndex[row][column]])
     return list(res)
 
+
 def all_but(candidates: List[int], *used: int) -> List[int]:
     """Return items in candidates that are not in used."""
     leftovers = set(candidates).difference(used)
     return [c for c in candidates if c in leftovers]
 
-CAND = [1,2,3,4,5,6,7,8,9]
-counts = [0]
-def sudoku(c: Chooser, counts, board):
-    counts[0]+=1
 
-    # print("INIT BOARD")
-    # printboard(board)
+CAND = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+counts = [0]
+
+
+def sudoku(c: Chooser, counts: List[int], board: List[List[int]]) -> None:
+    counts[0] += 1
+
     rows, columns, boxes = init_indexes(board)
     for row in range(9):
         for col in range(9):
@@ -67,44 +80,54 @@ def sudoku(c: Chooser, counts, board):
     printboard(board)
     c.stop()
 
-def printboard(board):
+
+def printboard(board:List[List[int]]) -> None:
     for row in board:
         print(row)
     print
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     cr = ChoiceRunner()
-    counts =[0]
+    counts = [0]
     # an easier board
-    cr.run(lambda c: sudoku(c, counts, [
-        [9,2,0,0,0,5,8,0,0],
-        [0,0,1,7,2,6,3,0,9],
-        [0,0,3,8,9,1,2,0,6],
+    cr.run(
+        lambda c: sudoku(
+            c,
+            counts,
+            [
+                [9, 2, 0, 0, 0, 5, 8, 0, 0],
+                [0, 0, 1, 7, 2, 6, 3, 0, 9],
+                [0, 0, 3, 8, 9, 1, 2, 0, 6],
+                [0, 8, 0, 0, 0, 0, 1, 0, 2],
+                [7, 0, 0, 0, 6, 0, 5, 0, 8],
+                [0, 0, 0, 0, 3, 0, 7, 0, 0],
+                [5, 0, 8, 0, 1, 3, 0, 0, 7],
+                [0, 4, 0, 6, 0, 7, 9, 1, 5],
+                [0, 0, 0, 2, 0, 0, 6, 0, 0],
+            ],
+        )
+    )
+    print("iterations: ", counts[0])
 
-        [0,8,0,0,0,0,1,0,2],
-        [7,0,0,0,6,0,5,0,8],
-        [0,0,0,0,3,0,7,0,0],
-
-        [5,0,8,0,1,3,0,0,7],
-        [0,4,0,6,0,7,9,1,5],
-        [0,0,0,2,0,0,6,0,0]
-    ]))
-    print("iterations: ",counts[0])
-
-    counts =[0]
+    counts = [0]
 
     # a hard puzzle I found somewhere
-    cr.run(lambda c: sudoku(c, counts, [
-        [0,3,0,6,0,0,0,8,0],
-        [0,0,9,8,0,1,7,0,2],
-        [0,0,0,5,0,0,0,0,6],
-
-        [0,0,0,0,1,0,0,0,3],
-        [0,8,5,0,0,0,9,0,4],
-        [0,7,0,0,2,0,0,0,0],
-
-        [0,9,0,0,0,7,0,0,0],
-        [0,5,3,0,0,0,0,0,0],
-        [0,0,0,0,9,0,0,4,7]
-    ]))
-    print("iterations: ",counts[0])
+    cr.run(
+        lambda c: sudoku(
+            c,
+            counts,
+            [
+                [0, 3, 0, 6, 0, 0, 0, 8, 0],
+                [0, 0, 9, 8, 0, 1, 7, 0, 2],
+                [0, 0, 0, 5, 0, 0, 0, 0, 6],
+                [0, 0, 0, 0, 1, 0, 0, 0, 3],
+                [0, 8, 5, 0, 0, 0, 9, 0, 4],
+                [0, 7, 0, 0, 2, 0, 0, 0, 0],
+                [0, 9, 0, 0, 0, 7, 0, 0, 0],
+                [0, 5, 3, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 9, 0, 0, 4, 7],
+            ],
+        )
+    )
+    print("iterations: ", counts[0])

@@ -2,37 +2,43 @@ from choice import ChoiceRunner, Chooser
 
 travel = {}
 
+
 def byMode(src, dest, mode):
     travel.setdefault(src, []).append((dest, mode))
 
+
 def byCar(src, dest):
-    byMode(src, dest, 'car')
+    byMode(src, dest, "car")
+
 
 def byTrain(src, dest):
-    byMode(src, dest, 'train')
+    byMode(src, dest, "train")
+
 
 def byPlane(src, dest):
-    byMode(src,dest, 'plane')
+    byMode(src, dest, "plane")
 
-byCar('auckland','hamilton')
-byCar('hamilton','raglan')
-byCar('valmont','saarbrueken')
-byCar('valmont','metz')
 
-byTrain('metz','frankfurt')
-byTrain('saarbrueken','frankfurt')
-byTrain('metz','paris')
-byTrain('saarbrueken','paris')
+byCar("auckland", "hamilton")
+byCar("hamilton", "raglan")
+byCar("valmont", "saarbrueken")
+byCar("valmont", "metz")
 
-byPlane('frankfurt','bangkok')
-byPlane('frankfurt','singapore')
-byPlane('paris','losAngeles')
-byPlane('bangkok','auckland')
-byPlane('singapore','auckland')
-byPlane('losAngeles','auckland')
+byTrain("metz", "frankfurt")
+byTrain("saarbrueken", "frankfurt")
+byTrain("metz", "paris")
+byTrain("saarbrueken", "paris")
+
+byPlane("frankfurt", "bangkok")
+byPlane("frankfurt", "singapore")
+byPlane("paris", "losAngeles")
+byPlane("bangkok", "auckland")
+byPlane("singapore", "auckland")
+byPlane("losAngeles", "auckland")
+
 
 def findPath(src, dest, chooser: Chooser):
-    path = [(src, 'start')]
+    path = [(src, "start")]
     current = src
 
     while current != dest:
@@ -44,4 +50,5 @@ def findPath(src, dest, chooser: Chooser):
         current = next[0]
     print(path)
 
-ChoiceRunner().run(lambda c: findPath('valmont', 'auckland', c))
+
+ChoiceRunner().run(lambda c: findPath("valmont", "auckland", c))
