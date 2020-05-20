@@ -47,37 +47,9 @@ def all_but(candidates: List[int], *used: int) -> List[int]:
 
 CAND = [1,2,3,4,5,6,7,8,9]
 counts = [0]
-def sudoku(c: Chooser):
+def sudoku(c: Chooser, counts, board):
     counts[0]+=1
-    # an easier board
-    # board = [
-    #     [9,2,0,0,0,5,8,0,0],
-    #     [0,0,1,7,2,6,3,0,9],
-    #     [0,0,3,8,9,1,2,0,6],
 
-    #     [0,8,0,0,0,0,1,0,2],
-    #     [7,0,0,0,6,0,5,0,8],
-    #     [0,0,0,0,3,0,7,0,0],
-
-    #     [5,0,8,0,1,3,0,0,7],
-    #     [0,4,0,6,0,7,9,1,5],
-    #     [0,0,0,2,0,0,6,0,0]
-    # ]
-
-    # a hard puzzle I found somewhere
-    board = [
-        [0,3,0,6,0,0,0,8,0],
-        [0,0,9,8,0,1,7,0,2],
-        [0,0,0,5,0,0,0,0,6],
-
-        [0,0,0,0,1,0,0,0,3],
-        [0,8,5,0,0,0,9,0,4],
-        [0,7,0,0,2,0,0,0,0],
-
-        [0,9,0,0,0,7,0,0,0],
-        [0,5,3,0,0,0,0,0,0],
-        [0,0,0,0,9,0,0,4,7]
-    ]
     # print("INIT BOARD")
     # printboard(board)
     rows, columns, boxes = init_indexes(board)
@@ -100,5 +72,39 @@ def printboard(board):
         print(row)
     print
 
-ChoiceRunner().run(sudoku)
-print(counts)
+if __name__ == '__main__':
+    cr = ChoiceRunner()
+    counts =[0]
+    # an easier board
+    cr.run(lambda c: sudoku(c, counts, [
+        [9,2,0,0,0,5,8,0,0],
+        [0,0,1,7,2,6,3,0,9],
+        [0,0,3,8,9,1,2,0,6],
+
+        [0,8,0,0,0,0,1,0,2],
+        [7,0,0,0,6,0,5,0,8],
+        [0,0,0,0,3,0,7,0,0],
+
+        [5,0,8,0,1,3,0,0,7],
+        [0,4,0,6,0,7,9,1,5],
+        [0,0,0,2,0,0,6,0,0]
+    ]))
+    print("iterations: ",counts[0])
+
+    counts =[0]
+
+    # a hard puzzle I found somewhere
+    cr.run(lambda c: sudoku(c, counts, [
+        [0,3,0,6,0,0,0,8,0],
+        [0,0,9,8,0,1,7,0,2],
+        [0,0,0,5,0,0,0,0,6],
+
+        [0,0,0,0,1,0,0,0,3],
+        [0,8,5,0,0,0,9,0,4],
+        [0,7,0,0,2,0,0,0,0],
+
+        [0,9,0,0,0,7,0,0,0],
+        [0,5,3,0,0,0,0,0,0],
+        [0,0,0,0,9,0,0,4,7]
+    ]))
+    print("iterations: ",counts[0])
