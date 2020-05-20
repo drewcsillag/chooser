@@ -1,27 +1,29 @@
 from choice import ChoiceRunner, Chooser
-from typing import Set, List, Tuple
+from typing import Set, List, Tuple, TypeVar
+
+Sets = Tuple[List[Set[int]], List[Set[int]], List[Set[int]]]
 
 
 def computeBoxIndex(row: int, column: int) -> int:
+    """The sudoku board has 9 "Boxes" where numbers need to be unique,
+    this, given a row and column computes which box"""
+
     boxrow = row // 3
     boxcol = column // 3
     return boxrow * 3 + boxcol
 
 
+# Because why not, let's just precompute all the box info
 boxIndex: List[List[int]] = []
 for row in range(9):
-    rbi : List[int] = []
+    rbi: List[int] = []
     boxIndex.append(rbi)
     for column in range(9):
         rbi.append(computeBoxIndex(row, column))
 
 
-def addTo(row: int, column: int, number: int,
-sets: Tuple[
-     List[Set[int]],
-      List[Set[int]],
-      List[Set[int]]
-      ]) -> None:
+def addTo(row: int, column: int, number: int, sets: Sets) -> None:
+    """Add number at row and column to sets"""
     rows, columns, boxes = sets
 
     rows[row].add(number)
@@ -30,10 +32,11 @@ sets: Tuple[
     boxes[boxIndex[row][column]].add(number)
 
 
-def init_indexes(board: List[List[int]]) -> Tuple[List[Set[int]], List[Set[int]], List[Set[int]]]:
-    rows:List[Set[int]] = [set() for i in range(9)]
-    cols:List[Set[int]] = [set() for i in range(9)]
-    boxes:List[Set[int]] = [set() for i in range(9)]
+def init_indexes(board: List[List[int]]) -> Sets:
+    """Make the initial Sets from the board to solve"""
+    rows: List[Set[int]] = [set() for i in range(9)]
+    cols: List[Set[int]] = [set() for i in range(9)]
+    boxes: List[Set[int]] = [set() for i in range(9)]
     for row in range(9):
         for col in range(9):
             number = board[row][col]
@@ -44,7 +47,8 @@ def init_indexes(board: List[List[int]]) -> Tuple[List[Set[int]], List[Set[int]]
     return rows, cols, boxes
 
 
-def canSee(row: int, column: int, sets: Tuple[List[Set[int]], List[Set[int]], List[Set[int]]]) -> List[int]:
+def canSee(row: int, column: int, sets: Sets) -> List[int]:
+    """What numbers are in view from row/column -- i.e. in the same row, column, or box"""
     rows, columns, boxes = sets
     res = set(rows[row])
     res.update(columns[column])
@@ -58,11 +62,11 @@ def all_but(candidates: List[int], *used: int) -> List[int]:
     return [c for c in candidates if c in leftovers]
 
 
-CAND = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-counts = [0]
+CANDIDATES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
 def sudoku(c: Chooser, counts: List[int], board: List[List[int]]) -> None:
+    """Solve the board using the chooser. Track iteration count in counts"""
     counts[0] += 1
 
     rows, columns, boxes = init_indexes(board)
@@ -72,7 +76,7 @@ def sudoku(c: Chooser, counts: List[int], board: List[List[int]]) -> None:
             if board[row][col] != 0:
                 continue
             # what #'s can go in the cell
-            candidates = all_but(CAND, *canSee(row, col, (rows, columns, boxes)))
+            candidates = all_but(CANDIDATES, *canSee(row, col, (rows, columns, boxes)))
             if not candidates:
                 return
             board[row][col] = num = c.choose(candidates)
@@ -81,7 +85,7 @@ def sudoku(c: Chooser, counts: List[int], board: List[List[int]]) -> None:
     c.stop()
 
 
-def printboard(board:List[List[int]]) -> None:
+def printboard(board: List[List[int]]) -> None:
     for row in board:
         print(row)
     print
@@ -111,8 +115,7 @@ if __name__ == "__main__":
     print("iterations: ", counts[0])
 
     counts = [0]
-
-    # a hard puzzle I found somewhere
+    # a hard puzzle
     cr.run(
         lambda c: sudoku(
             c,
