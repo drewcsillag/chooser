@@ -36,3 +36,8 @@ could have been made at that point.
 
 ## Big O
 for N = choices available and M = choice points, Execution-wise, it's O(N^M). Space-wise, it's O(N*M)
+
+# TODO
+* Clean up typescript package references (I basically just copied it from somewhere else and dropped it in).
+* Figure out how to make a pip package for python chooser
+
