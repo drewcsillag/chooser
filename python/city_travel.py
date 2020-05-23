@@ -1,4 +1,4 @@
-from choice import ChoiceRunner, Chooser
+from choice import run_choices, Chooser
 
 travel = {}
 
@@ -51,4 +51,4 @@ def findPath(src, dest, chooser: Chooser):
     print(path)
 
 
-ChoiceRunner().run(lambda c: findPath("valmont", "auckland", c))
+run_choices(lambda c: findPath("valmont", "auckland", c))

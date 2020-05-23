@@ -1,4 +1,4 @@
-from choice import ChoiceRunner, Chooser
+from choice import run_choices, Chooser
 from typing import Set, List, Tuple, TypeVar
 
 Sets = Tuple[List[Set[int]], List[Set[int]], List[Set[int]]]
@@ -92,10 +92,9 @@ def printboard(board: List[List[int]]) -> None:
 
 
 if __name__ == "__main__":
-    cr = ChoiceRunner()
     counts = [0]
     # an easier board
-    cr.run(
+    run_choices(
         lambda c: sudoku(
             c,
             counts,
@@ -116,7 +115,7 @@ if __name__ == "__main__":
 
     counts = [0]
     # a hard puzzle
-    cr.run(
+    run_choices(
         lambda c: sudoku(
             c,
             counts,

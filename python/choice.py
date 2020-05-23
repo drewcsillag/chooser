@@ -39,14 +39,10 @@ class Chooser(object):
         self.executions[:] = []
 
 
-class ChoiceRunner(object):
-    def __init__(self) -> None:
-        self.executions: List[List[int]] = []
-
-    def run(self, fn: Callable[[Chooser], None]) -> None:
-        fn(Chooser(self.executions, []))
-        while self.executions:
-            fn(Chooser(self.executions, self.executions.pop()))
+def run_choices(fn: Callable[[Chooser], None]) -> None:
+    executions = [[]]
+    while executions:
+        fn(Chooser(executions, executions.pop()))
 
 
 def test_solve_magic_square(c: Chooser, counterbox: List[int]) -> None:
@@ -98,8 +94,7 @@ def test_binary_counter(c: Chooser) -> None:
 
 
 if __name__ == "__main__":
-    runner = ChoiceRunner()
     counterbox = [0, 0]
-    runner.run(lambda chooser: test_solve_magic_square(chooser, counterbox))
+    run_choices(lambda chooser: test_solve_magic_square(chooser, counterbox))
     print("solutions, total executions:", counterbox)
-    runner.run(test_binary_counter)
+    run_choices(test_binary_counter)

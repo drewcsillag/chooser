@@ -1,4 +1,4 @@
-from choice import Chooser, ChoiceRunner
+from choice import run_choices, Chooser
 from typing import List
 
 # +----+----+----+----+
@@ -100,8 +100,7 @@ def kenken(c: Chooser, box: List[int]) -> None:
 
 
 box = [0]
-c = ChoiceRunner()
-c.run(lambda c: kenken(c, box))
+run_choices(lambda c: kenken(c, box))
 print(box)
 
 # [2, 4, 1, 3, 1, 2, 3, 4, 3, 1, 4, 2, 4, 3, 2, 1, 1]
