@@ -48,16 +48,12 @@ fn add_cell(indexes: &mut Indexes, row: usize, col: usize, cell: u8) {
 }
 
 fn candidates(indexes: &Indexes, row: usize, col: usize) -> Vec<u8> {
-    let cands: HashSet<u8> = (1..10).collect();
-    let mut diff: HashSet<u8> = cands
-        .difference(&(*indexes).rows[row]).map(|c| *c).collect();
-    diff = diff
-        .difference(&(*indexes).cols[col]).map(|c| *c).collect();
-    diff = diff
-        .difference(&(*indexes).boxes[BOX_INDEXES[row][col]]).map(|c| *c).collect();
-    let mut result: Vec<u8> = diff.drain().collect();
-    result.sort();
-    return result;
+    return (1..10)
+    .filter(
+        |i| !indexes.rows[row].contains(i)
+            && !indexes.cols[col].contains(i)
+            && !indexes.boxes[BOX_INDEXES[row][col]].contains(i)
+    ).collect();
 }
 
 pub fn solve(c: &mut chooser::Chooser, board: [[u8; 9]; 9]) {
@@ -65,25 +61,15 @@ pub fn solve(c: &mut chooser::Chooser, board: [[u8; 9]; 9]) {
 
     for row in 0..9 {
         for col in 0..9 {
-            println!("\nrow {0}, col{1}, cell {2}", row, col, indexes.board[row][col]);
-
             if indexes.board[row][col] != 0 {
-                println!("spot filled in, skipping");
                 continue;
             }
             let cand = candidates(&indexes, row, col);
-            println!("row {0}, col{1}, result {2:?}", row, col, indexes.board);
             if cand.len() == 0 {
-                println!("no candidates, backtracking");
                 return;
             }
-            println!("candidates -> {:?}", cand);
             let choice = *c.choose(&cand);
-            println!("chose {0}", choice);
             add_cell(&mut indexes, row, col, choice);
-            println!("row index {:?}", indexes.rows[row]);
-            println!("col index {:?}", indexes.cols[col]);
-            println!("box index {:?}", indexes.boxes[BOX_INDEXES[row][col]]);
         }
     }
     println!("result {:?}", indexes.board);
