@@ -1,42 +1,43 @@
-use std::collections::HashSet;
 use chooser;
+use std::collections::HashSet;
 
 const BOX_INDEXES: [[usize; 9]; 9] = [
-    [0,0,0,1,1,1,2,2,2],
-    [0,0,0,1,1,1,2,2,2],
-    [0,0,0,1,1,1,2,2,2],
-    [3,3,3,4,4,4,5,5,5],
-    [3,3,3,4,4,4,5,5,5],
-    [3,3,3,4,4,4,5,5,5],
-    [6,6,6,7,7,7,8,8,8],
-    [6,6,6,7,7,7,8,8,8],
-    [6,6,6,7,7,7,8,8,8],
+    [0, 0, 0, 1, 1, 1, 2, 2, 2],
+    [0, 0, 0, 1, 1, 1, 2, 2, 2],
+    [0, 0, 0, 1, 1, 1, 2, 2, 2],
+    [3, 3, 3, 4, 4, 4, 5, 5, 5],
+    [3, 3, 3, 4, 4, 4, 5, 5, 5],
+    [3, 3, 3, 4, 4, 4, 5, 5, 5],
+    [6, 6, 6, 7, 7, 7, 8, 8, 8],
+    [6, 6, 6, 7, 7, 7, 8, 8, 8],
+    [6, 6, 6, 7, 7, 7, 8, 8, 8],
 ];
 
+#[derive(Clone)]
 struct Indexes {
     rows: Vec<HashSet<u8>>,
     cols: Vec<HashSet<u8>>,
     boxes: Vec<HashSet<u8>>,
-    board: [[u8; 9]; 9]
+    board: [[u8; 9]; 9],
 }
-
 
 fn index_board(board: [[u8; 9]; 9]) -> Indexes {
     let mut result = Indexes {
         rows: (0..9).map(|_| HashSet::new()).collect(),
         cols: (0..9).map(|_| HashSet::new()).collect(),
         boxes: (0..9).map(|_| HashSet::new()).collect(),
-        board
+        board,
     };
-    (0..9).for_each(|row| (0..9).for_each(|col| {
-        let cell = board[row][col];
-        if cell > 0 {
-            result.rows[row].insert(cell);
-            result.cols[col].insert(cell);
-            let box_index = BOX_INDEXES[row][col];
-            result.boxes[box_index].insert(cell);
-        }
-    }));
+    (0..9).for_each(|row| {
+        (0..9).for_each(|col| {
+            let cell = board[row][col];
+            if cell > 0 {
+                result.rows[row].insert(cell);
+                result.cols[col].insert(cell);
+                result.boxes[BOX_INDEXES[row][col]].insert(cell);
+            }
+        })
+    });
     return result;
 }
 
@@ -49,16 +50,22 @@ fn add_cell(indexes: &mut Indexes, row: usize, col: usize, cell: u8) {
 
 fn candidates(indexes: &Indexes, row: usize, col: usize) -> Vec<u8> {
     return (1..10)
-    .filter(
-        |i| !indexes.rows[row].contains(i)
-            && !indexes.cols[col].contains(i)
-            && !indexes.boxes[BOX_INDEXES[row][col]].contains(i)
-    ).collect();
+        .filter(|i| {
+            !indexes.rows[row].contains(i)
+                && !indexes.cols[col].contains(i)
+                && !indexes.boxes[BOX_INDEXES[row][col]].contains(i)
+        })
+        .collect();
 }
 
-pub fn solve(c: &mut chooser::Chooser, board: [[u8; 9]; 9]) {
-    let mut indexes = index_board(board);
+pub fn solve_faster(board: [[u8; 9]; 9]) {
+    let init_index = index_board(board);
+    chooser::run_choices(|c| {
+        solve_innner(c, &mut init_index.clone());
+    })
+}
 
+fn solve_innner(c: &mut chooser::Chooser, indexes: &mut Indexes) {
     for row in 0..9 {
         for col in 0..9 {
             if indexes.board[row][col] != 0 {
@@ -68,10 +75,11 @@ pub fn solve(c: &mut chooser::Chooser, board: [[u8; 9]; 9]) {
             if cand.len() == 0 {
                 return;
             }
-            let choice = *c.choose(&cand);
-            add_cell(&mut indexes, row, col, choice);
+            add_cell(indexes, row, col, *c.choose(&cand));
         }
     }
-    println!("result {:?}", indexes.board);
+    for row in 0..9 {
+        println!("{:?}", indexes.board[row]);
+    }
     c.stop();
 }
