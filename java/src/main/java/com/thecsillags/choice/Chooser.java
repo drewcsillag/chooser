@@ -60,4 +60,8 @@ public class Chooser {
         choices.remove(ind);
         return ret;
     }
+
+    void stop() {
+        executions.clear();
+    }
 }
