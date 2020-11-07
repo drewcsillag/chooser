@@ -61,6 +61,14 @@ public class SudokuTest {
     }
 
     private static Puzzle makePuzzle() {
+        // Because the handling of the puzzle will scribble over the array, we create a new one each time.
+        // If we wanted to be fancy, we could keep a pool of these that we reuse so we don't instantiate tons of
+        // them. But meh, what good is a GC if you can't take it for a spin on a problem for fun? But, since we
+        // know there are only 10 threads, and the puzzle (except for when it's reported for success) never lives
+        // past the execution of a puzzle attempt, the pooling would pretty simple as its bounds would be of known size.
+        // So instead of newing one of these up every time, you grab one from the pool, call something like a reset()
+        // method, go to town, and put it back. Try-with-resources would be your friend for that.
+
         return new Puzzle(new int[][]{
                 {9, 2, 0, 0, 0, 5, 8, 0, 0},
                 {0, 0, 1, 7, 2, 6, 3, 0, 9},
