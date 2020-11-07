@@ -4,7 +4,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,6 +15,7 @@ import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -58,16 +61,16 @@ public class SudokuTest {
     }
 
     private static Puzzle makePuzzle() {
-        return new Puzzle(newArrayList(
-                newArrayList(9, 2, 0, 0, 0, 5, 8, 0, 0),
-                newArrayList(0, 0, 1, 7, 2, 6, 3, 0, 9),
-                newArrayList(0, 0, 3, 8, 9, 1, 2, 0, 6),
-                newArrayList(0, 8, 0, 0, 0, 0, 1, 0, 2),
-                newArrayList(7, 0, 0, 0, 6, 0, 5, 0, 8),
-                newArrayList(0, 0, 0, 0, 3, 0, 7, 0, 0),
-                newArrayList(5, 0, 8, 0, 1, 3, 0, 0, 7),
-                newArrayList(0, 4, 0, 6, 0, 7, 9, 1, 5),
-                newArrayList(0, 0, 0, 2, 0, 0, 6, 0, 0)));
+        return new Puzzle(new int[][]{
+                {9, 2, 0, 0, 0, 5, 8, 0, 0},
+                {0, 0, 1, 7, 2, 6, 3, 0, 9},
+                {0, 0, 3, 8, 9, 1, 2, 0, 6},
+                {0, 8, 0, 0, 0, 0, 1, 0, 2},
+                {7, 0, 0, 0, 6, 0, 5, 0, 8},
+                {0, 0, 0, 0, 3, 0, 7, 0, 0},
+                {5, 0, 8, 0, 1, 3, 0, 0, 7},
+                {0, 4, 0, 6, 0, 7, 9, 1, 5},
+                {0, 0, 0, 2, 0, 0, 6, 0, 0}});
     }
 
     @Test
@@ -83,16 +86,16 @@ public class SudokuTest {
 
         // Outputs varying numbers around 65-80 or so for this particular puzzle
         System.err.println("Invocation count " + invocationCount.get());
-        assertEquals(newArrayList(
-                newArrayList(9, 2, 6, 3, 4, 5, 8, 7, 1),
-                newArrayList(8, 5, 1, 7, 2, 6, 3, 4, 9),
-                newArrayList(4, 7, 3, 8, 9, 1, 2, 5, 6),
-                newArrayList(6, 8, 5, 4, 7, 9, 1, 3, 2),
-                newArrayList(7, 3, 4, 1, 6, 2, 5, 9, 8),
-                newArrayList(2, 1, 9, 5, 3, 8, 7, 6, 4),
-                newArrayList(5, 6, 8, 9, 1, 3, 4, 2, 7),
-                newArrayList(3, 4, 2, 6, 8, 7, 9, 1, 5),
-                newArrayList(1, 9, 7, 2, 5, 4, 6, 8, 3)),
+        assertArrayEquals(new int[][]{
+                {9, 2, 6, 3, 4, 5, 8, 7, 1},
+                {8, 5, 1, 7, 2, 6, 3, 4, 9},
+                {4, 7, 3, 8, 9, 1, 2, 5, 6},
+                {6, 8, 5, 4, 7, 9, 1, 3, 2},
+                {7, 3, 4, 1, 6, 2, 5, 9, 8},
+                {2, 1, 9, 5, 3, 8, 7, 6, 4},
+                {5, 6, 8, 9, 1, 3, 4, 2, 7},
+                {3, 4, 2, 6, 8, 7, 9, 1, 5},
+                {1, 9, 7, 2, 5, 4, 6, 8, 3}},
                 puzzleBox.get().puzzle);
     }
 
@@ -100,20 +103,20 @@ public class SudokuTest {
      * A quick way to get which box a given (row, col) is in.
      */
     private static class BoxIndexCache {
-        private static final List<List<Integer>> boxIndex = newArrayList(
-                newArrayList(0, 0, 0, 1, 1, 1, 2, 2, 2),
-                newArrayList(0, 0, 0, 1, 1, 1, 2, 2, 2),
-                newArrayList(0, 0, 0, 1, 1, 1, 2, 2, 2),
-                newArrayList(3, 3, 3, 4, 4, 4, 5, 5, 5),
-                newArrayList(3, 3, 3, 4, 4, 4, 5, 5, 5),
-                newArrayList(3, 3, 3, 4, 4, 4, 5, 5, 5),
-                newArrayList(6, 6, 6, 7, 7, 7, 8, 8, 8),
-                newArrayList(6, 6, 6, 7, 7, 7, 8, 8, 8),
-                newArrayList(6, 6, 6, 7, 7, 7, 8, 8, 8)
-        );
+        private static final int[][] boxIndex = {
+                {0, 0, 0, 1, 1, 1, 2, 2, 2},
+                {0, 0, 0, 1, 1, 1, 2, 2, 2},
+                {0, 0, 0, 1, 1, 1, 2, 2, 2},
+                {3, 3, 3, 4, 4, 4, 5, 5, 5},
+                {3, 3, 3, 4, 4, 4, 5, 5, 5},
+                {3, 3, 3, 4, 4, 4, 5, 5, 5},
+                {6, 6, 6, 7, 7, 7, 8, 8, 8},
+                {6, 6, 6, 7, 7, 7, 8, 8, 8},
+                {6, 6, 6, 7, 7, 7, 8, 8, 8}
+        };
 
         int getBoxIndex(final int row, final int col) {
-            return boxIndex.get(row).get(col);
+            return boxIndex[row][col];
         }
     }
 
@@ -126,9 +129,9 @@ public class SudokuTest {
         private final List<Set<Integer>> rows; // for each of the rows, what numbers live there
         private final List<Set<Integer>> columns; // for each of the columns, what numbers live there
         private final List<Set<Integer>> boxes; // for each of the boxes, what numbers live there
-        private final List<List<Integer>> puzzle; // the puzzle
+        private final int[][] puzzle; // the puzzle
 
-        private Puzzle(final List<List<Integer>> puzzle) {
+        private Puzzle(final int[][] puzzle) {
             this.puzzle = puzzle;
             this.rows = IntStream.range(0, 9).mapToObj(ignored -> Sets.<Integer>newHashSet()).collect(toList());
             this.columns = IntStream.range(0, 9).mapToObj(ignored -> Sets.<Integer>newHashSet()).collect(toList());
@@ -137,7 +140,7 @@ public class SudokuTest {
             // load the puzzle as it is into the indexes
             for (int row = 0; row < 9; row++) {
                 for (int col = 0; col < 9; col++) {
-                    final Integer number = puzzle.get(row).get(col);
+                    final Integer number = puzzle[row][col];
                     if (number > 0) {
                         addToIndex(row, col, number);
                     }
@@ -146,11 +149,11 @@ public class SudokuTest {
         }
 
         private int get(final int row, final int col) {
-            return puzzle.get(row).get(col);
+            return puzzle[row][col];
         }
 
         private void set(final int row, final int col, final int num) {
-            puzzle.get(row).set(col, num);
+            puzzle[row][col] = num;
             addToIndex(row, col, num);
         }
 
