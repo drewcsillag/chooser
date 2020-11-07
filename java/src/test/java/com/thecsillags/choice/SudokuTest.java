@@ -16,7 +16,6 @@ import java.util.stream.IntStream;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 /**
  * A more lengthy test of the parallel chooser.
@@ -28,7 +27,6 @@ import static org.junit.Assert.assertEquals;
  * exposition of the simplicity of chooser usage, and a simple sudoku solver.
  */
 public class SudokuTest {
-    private static final BoxIndexCache BOX_INDEX_CACHE = new BoxIndexCache();
     private static final List<Integer> CANDIDATES = newArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     /**
@@ -81,6 +79,10 @@ public class SudokuTest {
                 {0, 0, 0, 2, 0, 0, 6, 0, 0}});
     }
 
+    static int getBoxIndex(final int row, final int col) {
+        return (row / 3) * 3 + col / 3;
+    }
+
     @Test
     public void testSudokuPuzzle() throws InterruptedException {
         final AtomicReference<Puzzle> puzzleBox = new AtomicReference<>();
@@ -108,27 +110,6 @@ public class SudokuTest {
     }
 
     /**
-     * A quick way to get which box a given (row, col) is in.
-     */
-    private static class BoxIndexCache {
-        private static final int[][] boxIndex = {
-                {0, 0, 0, 1, 1, 1, 2, 2, 2},
-                {0, 0, 0, 1, 1, 1, 2, 2, 2},
-                {0, 0, 0, 1, 1, 1, 2, 2, 2},
-                {3, 3, 3, 4, 4, 4, 5, 5, 5},
-                {3, 3, 3, 4, 4, 4, 5, 5, 5},
-                {3, 3, 3, 4, 4, 4, 5, 5, 5},
-                {6, 6, 6, 7, 7, 7, 8, 8, 8},
-                {6, 6, 6, 7, 7, 7, 8, 8, 8},
-                {6, 6, 6, 7, 7, 7, 8, 8, 8}
-        };
-
-        int getBoxIndex(final int row, final int col) {
-            return boxIndex[row][col];
-        }
-    }
-
-    /**
      * Indexes to make lookups of the constraints on a given row, column, box of a sudoku puzzle.
      * <p>
      * This is *very* mutable.
@@ -148,7 +129,7 @@ public class SudokuTest {
             // load the puzzle as it is into the indexes
             for (int row = 0; row < 9; row++) {
                 for (int col = 0; col < 9; col++) {
-                    final Integer number = puzzle[row][col];
+                    final int number = puzzle[row][col];
                     if (number > 0) {
                         addToIndex(row, col, number);
                     }
@@ -168,7 +149,7 @@ public class SudokuTest {
         private void addToIndex(final int row, final int col, final int num) {
             rows.get(row).add(num);
             columns.get(col).add(num);
-            boxes.get(BOX_INDEX_CACHE.getBoxIndex(row, col)).add(num);
+            boxes.get(getBoxIndex(row, col)).add(num);
         }
 
         /**
@@ -184,7 +165,7 @@ public class SudokuTest {
             final List<Integer> leftovers = Lists.newArrayList(CANDIDATES);
             leftovers.removeAll(rows.get(row));
             leftovers.removeAll(columns.get(col));
-            leftovers.removeAll(boxes.get(BOX_INDEX_CACHE.getBoxIndex(row, col)));
+            leftovers.removeAll(boxes.get(getBoxIndex(row, col)));
             // It *should* (and seems to) be deterministic without this, but just in case.
             leftovers.sort(Comparator.naturalOrder());
             return leftovers;
