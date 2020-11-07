@@ -3,20 +3,21 @@ package com.thecsillags.choice;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
 
 public class ParallelChooserTest {
+    /**
+     * Chooses all possible combinations of picking 0 or 1 three times. Sorted will give you the binary numbers
+     * between 0 and 7.
+     */
     @Test public void testPlain() throws InterruptedException {
         final List<String> results = new CopyOnWriteArrayList<>();
-        ParallelChooser.run((c) -> results.add(
-                c.chooseArg("0", "1") + c.chooseArg("0", "1") + c.chooseArg("0", "1")),
+        ParallelChooser.run(chooser -> results.add(
+                chooser.chooseArg("0", "1") + chooser.chooseArg("0", "1") + chooser.chooseArg("0", "1")),
                 () -> Executors.newFixedThreadPool(10));
         results.sort(Comparator.naturalOrder());
         final ArrayList<String> expected = Lists.newArrayList(
@@ -25,36 +26,40 @@ public class ParallelChooserTest {
         assertEquals(expected, results);
     }
 
-    private void magicSquare(final ParallelChooser c, final List<String> results) {
+    /**
+     * Solve a 3 x 3 magic square -- adds up to 15 across, down, and diagonals. There are 8 solutions. They happen
+     * to be isomorphic, but that's not relevant for what I care about here.
+     */
+    private void magicSquare(final ParallelChooser chooser, final List<String> results) {
         final List<Integer> l = Lists.newArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9);
         final List<Integer> square = new ArrayList<>();
 
-        square.add(c.pick(l));
-        square.add(c.pick(l));
-        square.add(c.pick(l));
+        square.add(chooser.pick(l));
+        square.add(chooser.pick(l));
+        square.add(chooser.pick(l));
         if (square.get(0) + square.get(1) + square.get(2) != 15) {
             return;
         }
 
-        square.add(c.pick(l));
-        square.add(c.pick(l));
-        square.add(c.pick(l));
+        square.add(chooser.pick(l));
+        square.add(chooser.pick(l));
+        square.add(chooser.pick(l));
         if (square.get(3) + square.get(4) + square.get(5) != 15) {
             return;
         }
 
-        square.add(c.pick(l));
+        square.add(chooser.pick(l));
         if (square.get(0) + square.get(3) + square.get(6) != 15
                 || square.get(2) + square.get(4) + square.get(6) != 15) {
             return;
         }
 
-        square.add(c.pick(l));
+        square.add(chooser.pick(l));
         if (square.get(1) + square.get(4) + square.get(7) != 15) {
             return;
         }
 
-        square.add(c.pick(l));
+        square.add(chooser.pick(l));
         if (
                 square.get(6) + square.get(7) + square.get(8) != 15 ||
                         square.get(2) + square.get(5) + square.get(8) != 15 ||
@@ -65,9 +70,9 @@ public class ParallelChooserTest {
 
         results.add(String.format(
                 "%d %d %d %d %d %d %d %d %d",
-                square.get(0), square.get(1),square.get(2),
-                square.get(3), square.get(4),square.get(5),
-                square.get(6), square.get(7),square.get(8)
+                square.get(0), square.get(1), square.get(2),
+                square.get(3), square.get(4), square.get(5),
+                square.get(6), square.get(7), square.get(8)
         ));
     }
 
@@ -106,7 +111,7 @@ public class ParallelChooserTest {
                         "9 5 1 " +
                         "4 3 8"
         );
-        final List<String> results = new CopyOnWriteArrayList<>();
+        final List<String> results = Collections.synchronizedList(Lists.newArrayList());
         ParallelChooser.run((c)-> magicSquare(c, results), () -> Executors.newFixedThreadPool(10));
         results.sort(Comparator.naturalOrder());
         expected.sort(Comparator.naturalOrder());

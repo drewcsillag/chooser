@@ -1,13 +1,12 @@
 package com.thecsillags.choice;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -22,8 +21,8 @@ import static org.junit.Assert.assertEquals;
  * In reality, this could be faster, generate less garbage, etc. The threading assuredly is unnecessary,
  * as it runs faster non-threaded, but when threading is wrong, this fails miserably, which is the point.
  * <p>
- * Also, this is written in a way not so much to be fast (though it finishes sub-second), but to be a decent
- * exposition of the simplicity of chooser usage, and a simplified sudoku solver.
+ * Also, this is written in a way not so much to be fast (though it finishes sub-half-second), but to be a decent
+ * exposition of the simplicity of chooser usage, and a simple sudoku solver.
  */
 public class SudokuTest {
     private static final BoxIndexCache BOX_INDEX_CACHE = new BoxIndexCache();
@@ -41,16 +40,16 @@ public class SudokuTest {
             final Consumer<Puzzle> solutionConsumer) {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
-                // presupplied cell
+                // presupplied cell, skip it
                 if (puzzle.get(row, col) != 0) {
                     continue;
                 }
                 final List<Integer> candidates = puzzle.getCandidates(row, col);
 
                 if (candidates.isEmpty()) {
-                    return; // this is a dead end
+                    return; // no candidates means this is a dead end
                 }
-                // place a number and keep going
+                // choose a candidate and place it, then keep going
                 puzzle.set(row, col, chooser.choose(candidates));
             }
         }
@@ -74,10 +73,16 @@ public class SudokuTest {
     @Test
     public void testSudokuPuzzle() throws InterruptedException {
         final AtomicReference<Puzzle> puzzleBox = new AtomicReference<>();
+        final AtomicInteger invocationCount = new AtomicInteger(0);
         ParallelChooser.run(
-                chooser -> sudoku(chooser, makePuzzle(), puzzleBox::set),
+                chooser -> {
+                    invocationCount.incrementAndGet();
+                    sudoku(chooser, makePuzzle(), puzzleBox::set);
+                },
                 () -> Executors.newFixedThreadPool(10));
 
+        // Outputs varying numbers around 65-80 or so for this particular puzzle
+        System.err.println("Invocation count " + invocationCount.get());
         assertEquals(newArrayList(
                 newArrayList(9, 2, 6, 3, 4, 5, 8, 7, 1),
                 newArrayList(8, 5, 1, 7, 2, 6, 3, 4, 9),
@@ -163,11 +168,15 @@ public class SudokuTest {
          * @return the candidates
          */
         private List<Integer> getCandidates(final int row, final int col) {
-            final HashSet<Integer> leftovers = Sets.newHashSet(CANDIDATES);
+            // If leftovers, rows, columns, or boxes were big, it might be better to use a Set here, but for small N,
+            // the simpler thing is generally faster.
+            final List<Integer> leftovers = Lists.newArrayList(CANDIDATES);
             leftovers.removeAll(rows.get(row));
             leftovers.removeAll(columns.get(col));
             leftovers.removeAll(boxes.get(BOX_INDEX_CACHE.getBoxIndex(row, col)));
-            return newArrayList(leftovers);
+            // It *should* (and seems to) be deterministic without this, but just in case.
+            leftovers.sort(Comparator.naturalOrder());
+            return leftovers;
         }
     }
 }
