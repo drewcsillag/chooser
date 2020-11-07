@@ -75,7 +75,7 @@ public class SudokuTest {
     public void testSudokuPuzzle() throws InterruptedException {
         final AtomicReference<Puzzle> puzzleBox = new AtomicReference<>();
         ParallelChooser.run(
-                c -> sudoku(c, makePuzzle(), puzzleBox::set),
+                chooser -> sudoku(chooser, makePuzzle(), puzzleBox::set),
                 () -> Executors.newFixedThreadPool(10));
 
         assertEquals(newArrayList(
