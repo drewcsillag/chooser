@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 public class ParallelChooser {
     private final List<Integer> preChosen; // The choices we have to make before... FREEDOM!
     private final List<Integer> newChoices; // Choices we made after the pre-chosen ones
-    private final ChooserState state;
+    private final ChooserState state; // The bit that really handles all the concurrency bits
 
     // When we have pre-chosen choices to make, which step along that way we are
     private int index;
@@ -31,16 +31,15 @@ public class ParallelChooser {
      * Run a chooser session.
      *
      * @param fn The function to execute all possible choices of
-     * @param executorSupplier supplies the ExecutorService instance to execute fn on
+     * @param executorSupplier supplies the ExecutorService instance to execute fn on -- NOTE: the chooser will call
+     *                         shutdown() on it when it's done, so if you were planning to have it return one you
+     *                         already have, you will have a sad.
      * @throws InterruptedException
      */
     public static void run(
             final Consumer<ParallelChooser> fn,
             final Supplier<ExecutorService> executorSupplier) throws InterruptedException {
-        final ExecutorService executor = executorSupplier.get();
-
-        final ChooserState state = new ChooserState(executor, fn);
-
+        final ChooserState state = new ChooserState(executorSupplier.get(), fn);
         // kick off the first execution
         state.submit(new ArrayList<>());
 
@@ -101,8 +100,11 @@ public class ParallelChooser {
     }
 
     private static class ChooserState {
-        private final AtomicInteger submitted;
-        private final AtomicInteger finished;
+        // If we ever had more than 2^32 executions pending (signedness of the int not withstanding), this would be a
+        // problem, but that's not something I'm worried about. If you have more than 2^31 executions ever, the
+        // underlying int will wrap around, but that's ok as submitted will not == finished until all the stuff is done.
+        private final AtomicInteger submitted; // the number of executions submitted
+        private final AtomicInteger finished; // the number of completed executions
         private final ExecutorService executor;
         private final Consumer<ParallelChooser> fn;
         private final AtomicBoolean shouldStop;
@@ -126,20 +128,28 @@ public class ParallelChooser {
             // a) if the function we're running says so (i.e. they set shouldStop to true)
             // b) if submitted == finished, it means all the work to be done is done.
             while (keepGoing()) {
-                // In an ideal world, there would be a concurrency primitive that we could block on to do this, and maybe
-                // I'm just blanking on one -- if CountDownLatch could count up too, that'd be ideal, but :shrug: -- the
-                // price of lock-free concurrency is that sometimes, you spin in a thread.
+                // In an ideal world, there would be a concurrency primitive that we could block on to do this, and
+                // maybe there is and I'm just blanking-- if CountDownLatch could count up too, that'd be ideal, but
+                // :shrug: -- the price of lock-free concurrency is that sometimes, you spin a bit in a thread.
+
+                // Another alternative would be to keep a queue of Futures from executor.submit and just consume the
+                // queue calling future.get as you go, but that seems more clunky and plumbing-y than this.
                 Thread.sleep(1);
+                // Also, like many other concurrency wait functions, we *could* have a max wait time as an argument and
+                // bail on the wait after that time, but at least for now, I don't need it.
             }
         }
 
         void submit(final List<Integer> execution) {
             if (!shouldStop.get()) {
+                // Important to do this outside the executor submit bit as the body of that will run....whenever,
+                // which can cause finished to catch up and the chooser to "finish" prematurely.
                 submitted.incrementAndGet();
 
                 executor.submit(() -> {
                     // I should eventually add some exception handling for this. In the single threaded impl, an exc
-                    // would just stop the world, but in a parallel universe, not so.
+                    // would just stop the world, but in a parallel universe, not so. An exception thrown by fn would
+                    // cause the chooser to wait forever.
                     fn.accept(new ParallelChooser(this, execution));
                     finished.incrementAndGet();
                 });
