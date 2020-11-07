@@ -92,7 +92,7 @@ public class SudokuTest {
     }
 
     /**
-     * A quick way to get which box a given (row, col) is in. Effectively builds this:
+     * A quick way to get which box a given (row, col) is in.
      */
     private static class BoxIndexCache {
         private static final List<List<Integer>> boxIndex = newArrayList(
