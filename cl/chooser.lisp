@@ -4,59 +4,84 @@
 )
 (in-package :chooser)
 
+(defstruct ebox
+ (e (list nil) :type list))
+
+(defun append-ebox (eb nl)
+  (setf (ebox-e eb) (append (ebox-e eb) (list nl))))
+(defun length-ebox (eb)
+  (length (ebox-e eb)))
+(defun popfront-ebox (eb)
+  (let ((head (car (ebox-e eb)))
+	(rest (cdr (ebox-e eb))))
+    (setf (ebox-e eb) rest)
+    head))
+
 (defstruct chooser
-  "structure for holding chooser state for the current execution"
-  (executions (error "no executions passed") :type list)
-  (current (error "no current passed") :type list)
+  (executions (make-ebox) :type ebox)
   (index 0 :type fixnum)
-  (prechosen nil :type list)
+  (prechosen (error "no current passed") :type list)
   (new-choices nil :type list)
   )
+(defun add-execution (c e)
+  (append-ebox (chooser-executions c) e))
 
-
-(declaim (ftype (function (chooser fixnum) fixnum) choose-index))
 (defun choose-index (c num-args)
-  (check-type num-args fixnum)
-  (check-type c chooser)
-  (format t "index ~A ~%" (chooser-index c))
-  (format t "prechosen ~A~%" (length (chooser-prechosen c)))
+;;  (format t "index ~A ~%" (chooser-index c))
+;;  (format t "prechosen length ~A~%" (length (chooser-prechosen c)))
   (if (< (chooser-index c) (length (chooser-prechosen c)))
       (let ((retind (nth (chooser-index c) (chooser-prechosen c))))
 	(setf (chooser-index c) (+ 1 (chooser-index c)))
 	retind)
       (progn
-	(iterate (for i from 1 to num-args)
-	  (nconc (chooser-executions c)
-		 (append (chooser-prechosen c) (chooser-new-choices c) (list i))))
+;;	(format t "---------~%going to queue up executions and return something~%")
+	(iterate (for i from 1 to (- num-args 1))
+;;	  (format t "doing item ~A~%" i)
+;;	  (format t "prechosen ~A~%new ~A~%i ~A~%~%"
+;;		  (chooser-prechosen c)
+;;		  (chooser-new-choices c)
+;;		  (list i))
+
+	  (let ((new-execution (append  (chooser-prechosen c) (chooser-new-choices c) (list i))))
+	    (add-execution c new-execution)))
 	(setf (chooser-new-choices c) (append (chooser-new-choices c) '(0)))
-	0)))
+	0
+	 )))
+
+
 
 (defun run_chooser (fn)
-  (let ((executions '(nil)))
+  (let ((executions (make-ebox)))
     (iter
-      (while (> (length executions) 0))
-      (let ((current (car executions))
-	    (newexec (cdr executions)))
-	(setq executions newexec)
+      ;;(for i from 1 to 2)
+      (while (> (length-ebox executions) 0))
+;;      (format t "--------------------~%RUNNING CHOICE~%")
+      (let ((current (popfront-ebox executions)))
+;;	(format t "current execution --> ~A~%" current)
 	(funcall fn (make-chooser
-		     :executions executions :current current))))))
+		     :executions executions :prechosen current)))
+    
+      )
+    executions
+    )
+  )
 
-(defun binary-test (c)
-  (check-type c chooser::chooser)
-  (let ((a (choose-index c 2))
-	(b (choose-index c 2))
-	(c (choose-index c 2)))
-	
-  (format t "~A ~A ~A ~%" a b c)))
+(defun simpler-test (c)
+  (format t "SIMPLER TEST ~A~%" (choose-index c 2)))
+(run_chooser #'simpler-test)
 
-(run_chooser #'chooser::binary-test)
+(defun simpler-test2 (c)
+  (format t "SIMPLER TEST B) ~A ~A~%" (choose-index c 2) (choose-index c 2)))
+(run_chooser #'simpler-test2)
 
-(let ((executions nil)
-      (current nil))
-(setf qq (make-chooser
-		     :executions executions :current current)))
-      
-(defvar qq (make-chooser
-		     :executions executions :current current))
-(chooser::choose-index qq 2)
-qq
+
+
+
+
+
+(defvar q (make-ebox))
+(setq q (make-ebox))
+q
+(append-ebox q '(1 2 3))
+(popfront-ebox q)
+(length-ebox q)
