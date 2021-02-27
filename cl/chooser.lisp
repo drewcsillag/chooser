@@ -18,11 +18,11 @@
   "Given a chooser C and NUM-ARGS returns a number between 0 and NUM-ARGS-1, inclusive."
   (if (< (chooser-index c) (length (chooser-prechosen c)))
       (let ((retind (nth (chooser-index c) (chooser-prechosen c))))
-	(setf (chooser-index c) (+ 1 (chooser-index c)))
+	(incf (chooser-index c))
 	retind)
       (progn
 	(iterate (for i from 1 to (- num-args 1))
-	  (let ((new-execution (append  (chooser-prechosen c) (chooser-new-choices c) (list i))))
+	  (let ((new-execution (append (chooser-prechosen c) (chooser-new-choices c) (list i))))
 	    (funcall (chooser-append-execution c) new-execution)))
 	(setf (chooser-new-choices c) (append (chooser-new-choices c) '(0)))
 	0
@@ -46,20 +46,12 @@
 (declaim (ftype (function ((function (t)))) run_chooser))
 (defun run_chooser (fn)
   "Runs the chooser loop on FN"
-  (let ((executions '(nil)))
-    (flet ((append-execution (e)
-	       (setf executions (append executions (list e)))))
-      (iter
-	(while (> (length executions) 0))
-	(let ((current (car executions))
-	      (rest-executions (cdr executions)))
-	  (setf executions rest-executions)
-	  (funcall fn (make-chooser
-		       :append-execution #'append-execution :prechosen current)))
-	))
-    executions
-    )
-  )
+  (let* ((executions '(nil))
+	 (append-execution (lambda (e) (setf executions (append executions (list e))))))
+    (iter
+      (while (> (length executions) 0))
+      (let ((current (pop executions)))
+	(funcall fn (make-chooser :append-execution append-execution :prechosen current))))))
 
 (defun simpler-test (c)
   (format t "SIMPLER TEST ~A~%" (choose-index c 2)))
