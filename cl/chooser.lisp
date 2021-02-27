@@ -6,38 +6,12 @@
 )
 (in-package :chooser)
 
-(defstruct ebox
- (e (list nil) :type list))
-
-(declaim (ftype (function (ebox list)) append-ebox))
-(defun append-ebox (eb nl)
-  "Appends a list NL to the exection in EB"
-  (setf (ebox-e eb) (append (ebox-e eb) (list nl))))
-
-(declaim (ftype (function (ebox) fixnum) length-ebox))
-(defun length-ebox (eb)
-  "Returns the length of the list in EB"
-  (length (ebox-e eb)))
-
-(declaim (ftype (function (ebox) list) popfront-ebox))
-(defun popfront-ebox (eb)
-  "Removes the head item from EB and returns it"
-  (let ((head (car (ebox-e eb)))
-	(rest (cdr (ebox-e eb))))
-    (setf (ebox-e eb) rest)
-    head))
-
 (defstruct chooser
-  (executions (make-ebox) :type ebox)
+  (append-execution (error "no append-execution passed") :type (function (list)))
   (index 0 :type fixnum)
   (prechosen (error "no current passed") :type list)
   (new-choices nil :type list)
   )
-
-(declaim (ftype (function (chooser list)) add-execution))
-(defun add-execution (c e)
-  "Adds an execution E to the chooser C"
-  (append-ebox (chooser-executions c) e))
 
 (declaim (ftype (function (chooser fixnum) fixnum) choose-index))
 (defun choose-index (c num-args)
@@ -49,11 +23,10 @@
       (progn
 	(iterate (for i from 1 to (- num-args 1))
 	  (let ((new-execution (append  (chooser-prechosen c) (chooser-new-choices c) (list i))))
-	    (add-execution c new-execution)))
+	    (funcall (chooser-append-execution c) new-execution)))
 	(setf (chooser-new-choices c) (append (chooser-new-choices c) '(0)))
 	0
 	)))
-
 
 ;; in the ideal world the t's would be enforce to be the same thing
 ;; by doing some kind of capture 
@@ -73,13 +46,17 @@
 (declaim (ftype (function ((function (t)))) run_chooser))
 (defun run_chooser (fn)
   "Runs the chooser loop on FN"
-  (let ((executions (make-ebox)))
-    (iter
-      (while (> (length-ebox executions) 0))
-      (let ((current (popfront-ebox executions)))
-	(funcall fn (make-chooser
-		     :executions executions :prechosen current)))
-      )
+  (let ((executions '(nil)))
+    (flet ((append-execution (e)
+	       (setf executions (append executions (list e)))))
+      (iter
+	(while (> (length executions) 0))
+	(let ((current (car executions))
+	      (rest-executions (cdr executions)))
+	  (setf executions rest-executions)
+	  (funcall fn (make-chooser
+		       :append-execution #'append-execution :prechosen current)))
+	))
     executions
     )
   )
@@ -91,9 +68,6 @@
 (defun simpler-test2 (c)
   (format t "SIMPLER TEST B) ~A ~A~%" (choose-index c 3) (choose-index c 3)))
 (run_chooser #'simpler-test2)
-
-(defun lappend (l item)
-  (append l (list item)))
 
 (defun solve-magic-square (c consumer)
   (let ((remaining '(1 2 3 4 5 6 7 8 9))
@@ -131,7 +105,6 @@
       (checkbail 0 4 8) ;diagonal down to right
       (funcall consumer square)
       )))
-(run_chooser #'solve-magic-square)
 
 (defvar sol-count 0)
 (setq sol-count 0)
