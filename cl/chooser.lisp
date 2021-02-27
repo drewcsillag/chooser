@@ -1,4 +1,6 @@
 (ql:quickload "iterate")
+;; TODO get rid of the need for ebox -- pass lambda to set the thing.
+
 (defpackage chooser
   (:use "COMMON-LISP" "ITERATE")
 )
@@ -9,14 +11,17 @@
 
 (declaim (ftype (function (ebox list)) append-ebox))
 (defun append-ebox (eb nl)
+  "Appends a list NL to the exection in EB"
   (setf (ebox-e eb) (append (ebox-e eb) (list nl))))
 
 (declaim (ftype (function (ebox) fixnum) length-ebox))
 (defun length-ebox (eb)
+  "Returns the length of the list in EB"
   (length (ebox-e eb)))
 
 (declaim (ftype (function (ebox) list) popfront-ebox))
 (defun popfront-ebox (eb)
+  "Removes the head item from EB and returns it"
   (let ((head (car (ebox-e eb)))
 	(rest (cdr (ebox-e eb))))
     (setf (ebox-e eb) rest)
@@ -31,10 +36,12 @@
 
 (declaim (ftype (function (chooser list)) add-execution))
 (defun add-execution (c e)
+  "Adds an execution E to the chooser C"
   (append-ebox (chooser-executions c) e))
 
 (declaim (ftype (function (chooser fixnum) fixnum) choose-index))
 (defun choose-index (c num-args)
+  "Given a chooser C and NUM-ARGS returns a number between 0 and NUM-ARGS-1, inclusive."
   (if (< (chooser-index c) (length (chooser-prechosen c)))
       (let ((retind (nth (chooser-index c) (chooser-prechosen c))))
 	(setf (chooser-index c) (+ 1 (chooser-index c)))
@@ -52,10 +59,12 @@
 ;; by doing some kind of capture 
 (declaim (ftype (function (list fixnum (function (t))) t) remove-nth))				
 (defun remove-nth (l ind setter)
+  "Calls SETTER with the contents of L with the item at index IND removed"
   (funcall setter (remove-if (constantly t) l :start ind :count 1)))
 
 (declaim (ftype (function (chooser list (function (t))) t) chooser-pick))
 (defun chooser-pick (c items setter)
+  "pick an item from ITEMS using C and call SETTER with ITEMS with the chosen item removed"
   (let* ((ind (choose-index c (length items)))
 	(ret (nth ind items)))
     (remove-nth items ind setter)
@@ -63,6 +72,7 @@
 
 (declaim (ftype (function ((function (t)))) run_chooser))
 (defun run_chooser (fn)
+  "Runs the chooser loop on FN"
   (let ((executions (make-ebox)))
     (iter
       (while (> (length-ebox executions) 0))
