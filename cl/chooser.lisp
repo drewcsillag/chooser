@@ -1,6 +1,5 @@
 (ql:quickload "iterate")
 (ql:quickload "alexandria")
-;; TODO get rid of the need for ebox -- pass lambda to set the thing.
 
 (defpackage chooser
   (:use "COMMON-LISP" "ITERATE" "ALEXANDRIA")
@@ -108,6 +107,6 @@
   (setf sol-count (+ 1 sol-count)))
 
 (run_chooser (lambda (c) (solve-magic-square c #'consume)))
-   
 sol-count
 
+(run_chooser (lambda (c) (format t "~A ~A ~A~%" (chooser-choose c '(0 1)) (chooser-choose c '(0 1)) (chooser-choose c '(0 1)))))

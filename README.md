@@ -5,7 +5,7 @@ I was reading a book on prolog and it reminded me of something I had written yea
 effectively did things similar to the way prolog works. That is: you just define what's true and it does
 what would otherwise be some recursive search. So I rewrote the idea from what I remembered
 
-There are versions in Python, Rust, Java, TypeScript, and JavaScript. Each of the versions has two example cases:
+There are versions in Python, Rust, Java, TypeScript, JavaScript, and Common Lisp. Each of the versions has two example cases:
 1. print solutions to the 3x3 magic square
 2. print the binary numbers from 0 to 7
 
