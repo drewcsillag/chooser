@@ -28,6 +28,7 @@ impl Chooser<'_> {
             self.executions.push(new_exec);
         }
         self.new_choices.push(0);
+
         return 0;
     }
 

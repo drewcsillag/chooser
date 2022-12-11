@@ -17,7 +17,10 @@ class Chooser(object):
             return retind
 
         for i in range(1, numArgs):
-            self.executions.append(self.prechosen + self.newChoices + [i])
+            newExecution = self.prechosen + self.newChoices + [i]
+            # print("New execution: " + str(newExecution))
+            self.executions.append(newExecution)
+            # print("exes now: " + str(self.executions))
         self.newChoices.append(0)
         return 0
 
@@ -32,6 +35,9 @@ class Chooser(object):
     def pick(self, l: List[T]) -> T:
         c = self.choose_index(len(l))
         ret = l[c]
+        # print("pick from [" + str(" ".join([str(i)for i in l])) + "]")
+        # print ("chose index " + str(c) + " value " + str(ret))
+
         del l[c]
         return ret
 
@@ -42,6 +48,7 @@ class Chooser(object):
 def run_choices(fn: Callable[[Chooser], None]) -> None:
     executions = [[]]
     while executions:
+        # print("executions is: " + str(executions))
         fn(Chooser(executions, executions.pop()))
 
 
@@ -90,7 +97,7 @@ def test_solve_magic_square(c: Chooser, counterbox: List[int]) -> None:
 
 
 def test_binary_counter(c: Chooser) -> None:
-    print([c.choose([0, 1]) for i in range(3)])
+    print([c.choose([0, 1, 2]) for i in range(3)])
 
 
 if __name__ == "__main__":
