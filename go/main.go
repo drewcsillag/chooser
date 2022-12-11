@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-
 type Chooser struct {
 	executions *[][]int
 	prechosen []int
@@ -41,8 +40,16 @@ func (c *Chooser) ChooseIndex(numargs int) int {
 	var tslice []int
 	for i := 1; i < numargs; i++ {
 		newexec := append(append(c.prechosen, c.newchoices...), i)
+
+		// ---
+		// with the following two lines, you win
 		tslice = make([]int, len(newexec))
 		copy(tslice, newexec)
+
+		// ----
+		// with the following line uncommented, you lose
+		// tslice = newexec
+
 		// reusing newexec w/o the copy results in unexpected data sharing
 		// where it appears that slice returned from the above append is
 		// the *same* slice, just with an altered value. >:( !!!!
@@ -136,14 +143,33 @@ func test_magic(c *Chooser, counterbox *[]int) {
 
 } 
 
+var emitted []bool
+
 func test_bin(c *Chooser) {
-	fmt.Printf("[%d, %d, %d]\n",
-		c.ChooseIndex(3),
-		c.ChooseIndex(3),
-		c.ChooseIndex(3))
+	t := 0
+	s := make([]int, 5)
+	
+	for i := 0 ; i < 5; i++ {
+		s[i] = c.ChooseIndex(2)
+		t *= 2
+		t += s[i]
+	} 
+
+	r := ""
+	if emitted[t] {
+		r = "FAIL"
+	}
+	emitted[t] = true
+
+	fmt.Printf("[%d, %d, %d, %d, %d] = %d %s\n",
+		s[0], s[1], s[2], s[3], s[4], t, r)
 }
 
 func main() {
+	emitted = make([]bool, 32)
+	for i := 0; i < 32; i++ {
+		emitted[i] = false
+	}
 	counterbox := []int{0, 0}
 	RunChoices(func (c *Chooser) { test_magic(c, &counterbox)})
 	fmt.Printf("solutions and execs: %+v\n", counterbox)
