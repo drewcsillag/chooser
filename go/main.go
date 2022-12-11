@@ -46,6 +46,15 @@ func (c *Chooser) ChooseIndex(numargs int) int {
 		// reusing newexec w/o the copy results in unexpected data sharing
 		// where it appears that slice returned from the above append is
 		// the *same* slice, just with an altered value. >:( !!!!
+		// So you wind up with executions like this:
+		/// executions: ...[a,b,c]
+		/// append [a,b,c,0]
+		/// executions: ...[a,b,c], [a,b,c,0]
+		/// append [a,b,c,1]
+		/// executions: ...[a,b,c], [a,b,c,1], [a,b,c,1]
+		///                 WTAF ----------^  that should be 0
+		// This doesn't happen on shorter slices, but only when the new executions
+		// grows to about 4-5 elements long
 		// fmt.Printf("New execution: %s\n", stringifyExecution(tslice))
 		*(*c).executions = append(*c.executions, tslice)
 		// fmt.Printf("exes now: %s\n", stringifyExecutions(*c.executions))
