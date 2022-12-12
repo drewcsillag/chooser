@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Chooser struct {
@@ -14,22 +13,6 @@ type Chooser struct {
 
 type ChooserFunc func(*Chooser);
 
-func stringifyExecution(ex []int) string {
-	exs := []string{}
-	for _, v := range ex {
-		r := fmt.Sprintf("%d", v)
-		exs = append(exs, r)
-	}
-	return fmt.Sprintf("[%s]", strings.Join(exs, ", "))
-}
-func stringifyExecutions(e [][]int) string {
-	ex := []string{}
-	for _, v := range e {
-		ex = append(ex, stringifyExecution(v))
-	}
-	return fmt.Sprintf("[%s]", strings.Join(ex, ", "))
-}
-
 func (c *Chooser) ChooseIndex(numargs int) int {
 	if c.index < len(c.prechosen) {
 		retind := c.prechosen[c.index]
@@ -39,30 +22,10 @@ func (c *Chooser) ChooseIndex(numargs int) int {
 
 	var tslice []int
 	for i := 1; i < numargs; i++ {
-		newexec := append(append(c.prechosen, c.newchoices...), i)
-
-		// ---
-		// with the following two lines, you win
-		// tslice = make([]int, len(newexec))
-		// copy(tslice, newexec)
-
-		// ----
-		// with the following line uncommented, you lose
-		tslice = newexec
-
-		// reusing newexec w/o the copy results in unexpected data sharing
-		// where it appears that slice returned from the above append is
-		// the *same* slice, just with an altered value. >:( !!!!
-		// So you wind up with executions like this:
-		/// executions: ...[a,b,c]
-		/// append [a,b,c,0]
-		/// executions: ...[a,b,c], [a,b,c,0]
-		/// append [a,b,c,1]
-		/// executions: ...[a,b,c], [a,b,c,1], [a,b,c,1]
-		///                 WTAF ----------^  that should be 0
-		// This doesn't happen on shorter slices, but only when the new executions
-		// grows to about 4-5 elements long
-		// fmt.Printf("New execution: %s\n", stringifyExecution(tslice))
+		// because golang append is broken -- it modifies AND returns the slice WTF?
+		tslice = make([]int, len(c.prechosen))
+		copy(tslice, c.prechosen)
+		tslice := append(append(tslice, c.newchoices...), i)
 		*(*c).executions = append(*c.executions, tslice)
 		// fmt.Printf("exes now: %s\n", stringifyExecutions(*c.executions))
 	}
