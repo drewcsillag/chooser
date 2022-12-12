@@ -43,12 +43,12 @@ func (c *Chooser) ChooseIndex(numargs int) int {
 
 		// ---
 		// with the following two lines, you win
-		tslice = make([]int, len(newexec))
-		copy(tslice, newexec)
+		// tslice = make([]int, len(newexec))
+		// copy(tslice, newexec)
 
 		// ----
 		// with the following line uncommented, you lose
-		// tslice = newexec
+		tslice = newexec
 
 		// reusing newexec w/o the copy results in unexpected data sharing
 		// where it appears that slice returned from the above append is
