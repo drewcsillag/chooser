@@ -169,17 +169,6 @@ pub fn run_par_choices<'a, F: 'static>(mut f: F, numthreads: usize)
 where
     F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
 {
-    // threads that are requesting for a chunk
-    let mut request = Vec::new();
-    // threads that are processing a chunk
-    let mut busy: Vec<bool> = Vec::new();
-
-    // create stuff
-    for _ in 0..numthreads {
-        request.push(false);
-        busy.push(false);
-    }
-
     let (maintx, mainrx) = channel();
     let mut threadchans = Vec::new();
 
@@ -221,8 +210,34 @@ where
         });
     }
 
+    main_thread(mainrx, &threadchans, numthreads);
+
+    // Tell all the threads to shut down
+    for i in 0..numthreads {
+        threadchans[i]
+            .send(MainToWorker {
+                gostop: WorkerGoStop::Stop,
+                execution: Option::None,
+            })
+            .unwrap();
+    }
+
+    // could probably do something with join handles here
+}
+
+fn main_thread(mainrx: std::sync::mpsc::Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWorker>>, numthreads: usize) {
     // Main
     let mut executions: Vec<Vec<usize>> = vec![vec![]];
+    // threads that are requesting for a chunk
+    let mut request = Vec::new();
+
+    // threads that are processing a chunk
+    let mut busy: Vec<bool> = Vec::new();
+    for _i in 0..numthreads {
+        busy.push(false);
+        request.push(false);
+
+    }
     loop {
         // get a message from a worker thread
         let message = mainrx.recv().unwrap().clone();
@@ -245,7 +260,7 @@ where
                     // there was an execution, send it to the worker (and it's busy).
                     Some(value) => {
                         busy[message.threadno] = true;
-                        threadchans[message.threadno]
+                        (*threadchans)[message.threadno]
                             .send(MainToWorker {
                                 gostop: WorkerGoStop::Go,
                                 execution: Option::Some(value),
@@ -263,7 +278,7 @@ where
                 // are any threads waiting for one? give it to them
                 for i in 0..numthreads {
                     if request[i] {
-                        threadchans[i]
+                        (*threadchans)[i]
                             .send(MainToWorker {
                                 gostop: WorkerGoStop::Go,
                                 execution: nopt,
@@ -301,16 +316,4 @@ where
             break;
         }
     }
-
-    // Tell all the threads to shut down
-    for i in 0..numthreads {
-        threadchans[i]
-            .send(MainToWorker {
-                gostop: WorkerGoStop::Stop,
-                execution: Option::None,
-            })
-            .unwrap();
-    }
-
-    // could probably do something with join handles here
 }

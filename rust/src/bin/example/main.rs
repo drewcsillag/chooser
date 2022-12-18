@@ -48,7 +48,7 @@ fn magic_square(c: &mut chooser::ParChooser) {
 fn main() {
     chooser::run_par_choices(count_in_binary, 8);
     println!();
-    chooser::run_par_choices(magic_square, 1);
+    chooser::run_par_choices(magic_square, 15);
 
     // chooser::run_choices(|c|
     sudoku::solve_faster(
