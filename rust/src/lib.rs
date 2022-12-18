@@ -211,7 +211,7 @@ fn worker_thread<F>(
     rx: Receiver<MainToWorker>,
     mut f: F,
 ) where
-    F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
+    F: FnMut(&mut ParChooser) + std::marker::Send,
 {
     loop {
         // CAVEAT ignoring failure
