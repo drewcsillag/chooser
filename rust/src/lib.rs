@@ -55,7 +55,7 @@ where
     }
 }
 
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread;
 
 enum WorkerGetPut {
@@ -172,6 +172,7 @@ where
     let (maintx, mainrx) = channel();
     let mut threadchans = Vec::new();
 
+    let mut worker_handles = Vec::new();
     // WORKERS
     for threadno in 0..numthreads {
         let (tx, rx) = channel();
@@ -179,38 +180,14 @@ where
         // gets snarfed into the thread spawn below
         let maintx = maintx.clone();
 
-        thread::spawn(move || {
-            loop {
-                // CAVEAT ignoring failure
-                // Tell main thread to give us something
-                let _result = maintx
-                    .send(WorkerToMain {
-                        threadno: threadno,
-                        putget: WorkerGetPut::Get,
-                        execution: Option::None,
-                    });
-                    
-                // Get a command from the main thread
-                let command: MainToWorker = rx.recv().unwrap();
-                match command.gostop {
-                    // main thread told us to stop
-                    WorkerGoStop::Stop => {
-                        break;
-                    }
-                    // we got a chunk of work to do
-                    WorkerGoStop::Go => {
-                        f(&mut ParChooser::new(
-                            threadno,
-                            &maintx,
-                            command.execution.unwrap(),
-                        ));
-                    }
-                }
-            }
-        });
+        worker_handles.push(thread::spawn(move || {
+            worker_thread(maintx, threadno, rx, f);
+        }));
     }
 
-    main_thread(mainrx, &threadchans, numthreads);
+    let main_handle = thread::spawn(move || {
+        main_thread(mainrx, &threadchans, numthreads);
+    });
 
     // Tell all the threads to shut down
     for i in 0..numthreads {
@@ -222,7 +199,47 @@ where
             .unwrap();
     }
 
+    while ! worker_handles.is_empty() {
+        let h = worker_handles.pop();
+        match h {
+            Option::Some(h) => { let _r = h.join(); },
+            Option::None => {}
+        }
+    }
+
+    let _mhj = main_handle.join();
     // could probably do something with join handles here
+}
+
+fn worker_thread<F: 'static>(maintx: Sender<WorkerToMain>, threadno: usize, rx: Receiver<MainToWorker>, f: F) 
+where F: FnMut(&mut ParChooser) + std::marker::Send + Copy {
+    loop {
+        // CAVEAT ignoring failure
+        // Tell main thread to give us something
+        let _result = maintx
+            .send(WorkerToMain {
+                threadno: threadno,
+                putget: WorkerGetPut::Get,
+                execution: Option::None,
+            });
+        
+        // Get a command from the main thread
+        let command: MainToWorker = rx.recv().unwrap();
+        match command.gostop {
+            // main thread told us to stop
+            WorkerGoStop::Stop => {
+                break;
+            }
+            // we got a chunk of work to do
+            WorkerGoStop::Go => {
+                f(&mut ParChooser::new(
+                    threadno,
+                    &maintx,
+                    command.execution.unwrap(),
+                ));
+            }
+        }
+    }
 }
 
 fn main_thread(mainrx: std::sync::mpsc::Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWorker>>, numthreads: usize) {
