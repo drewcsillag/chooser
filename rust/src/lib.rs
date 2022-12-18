@@ -165,47 +165,51 @@ impl ParChooser<'_> {
     }
 }
 
-pub fn run_par_choices<F: 'static>(mut f: F, numthreads: usize)
+pub fn run_par_choices<'a, F: 'static>(mut f: F, numthreads: usize)
 where
     F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
 {
+    // threads that are requesting for a chunk
     let mut request = Vec::new();
+    // threads that are processing a chunk
     let mut busy: Vec<bool> = Vec::new();
+
+    // create stuff
     for _ in 0..numthreads {
         request.push(false);
         busy.push(false);
     }
-    // let l = request.len();
-    // println!("request is {l} long");
-    let (maintx, mainrx) = channel();
 
+    let (maintx, mainrx) = channel();
     let mut threadchans = Vec::new();
 
     // WORKERS
     for threadno in 0..numthreads {
-        // println!("thread {threadno} starting");
         let (tx, rx) = channel();
         threadchans.push(tx);
+        // gets snarfed into the thread spawn below
         let maintx = maintx.clone();
 
         thread::spawn(move || {
             loop {
-                // println!("Thread {threadno} getting work");
-                maintx
+                // CAVEAT ignoring failure
+                // Tell main thread to give us something
+                let _result = maintx
                     .send(WorkerToMain {
                         threadno: threadno,
                         putget: WorkerGetPut::Get,
                         execution: Option::None,
-                    })
-                    .unwrap();
+                    });
+                    
+                // Get a command from the main thread
                 let command: MainToWorker = rx.recv().unwrap();
                 match command.gostop {
+                    // main thread told us to stop
                     WorkerGoStop::Stop => {
-                        // println!("Thread {threadno} got stop");
                         break;
                     }
+                    // we got a chunk of work to do
                     WorkerGoStop::Go => {
-                        // println!("Thread {threadno} got a Go");
                         f(&mut ParChooser::new(
                             threadno,
                             &maintx,
@@ -217,29 +221,29 @@ where
         });
     }
 
-    // println!("starting main bit");
     // Main
     let mut executions: Vec<Vec<usize>> = vec![vec![]];
     loop {
-        // println!("Main getting message");
+        // get a message from a worker thread
         let message = mainrx.recv().unwrap().clone();
 
         match message.putget {
+            // stop the presses! break out of the loop
             WorkerGetPut::Stop => {
                 break;
             }
+            // they want something to do
             WorkerGetPut::Get => {
-                // let tno = message.threadno;
-                // println!("Main got Get message from thread {tno}");
+                // try to get an execution
                 let execution = executions.pop();
                 match execution {
+                    // no execution, we're not busy, and we're waiting on a request
                     None => {
-                        // println!("Main, no message to be given to thread {tno}");
                         request[message.threadno] = true;
                         busy[message.threadno] = false;
                     }
+                    // there was an execution, send it to the worker (and it's busy).
                     Some(value) => {
-                        // println!("Main, WE HAVE message to be given to thread {tno}");
                         busy[message.threadno] = true;
                         threadchans[message.threadno]
                             .send(MainToWorker {
@@ -250,13 +254,13 @@ where
                     }
                 }
             }
+            // they're giving us an execution
             WorkerGetPut::Put => {
-                // let tno = message.threadno;
-                // println!("Main got Put message from thread {tno}");
                 let mut sent = false;
                 let v = message.execution.unwrap();
                 let nopt = Option::Some(v.clone());
 
+                // are any threads waiting for one? give it to them
                 for i in 0..numthreads {
                     if request[i] {
                         threadchans[i]
@@ -271,17 +275,21 @@ where
                         break;
                     }
                 }
+                // no waiting threads? throw it into the executions vector
                 if !sent {
                     executions.push(v.to_vec());
                 }
             }
         }
 
-        let eie = executions.is_empty();
-        // println!("Executions empty? {eie}");
-        if !eie {
+        // command processed, is it time to be done
+
+        // if there are more things to execute, clearly not done.
+        if !executions.is_empty() {
             continue;
         }
+
+        // Are any threads busy? then we're not done.
         let mut waiting = false;
         for i in 0..numthreads {
             if busy[i] {
@@ -289,12 +297,12 @@ where
                 break;
             }
         }
-        // println!("waiting threads? {waiting}");
         if !waiting {
             break;
         }
     }
 
+    // Tell all the threads to shut down
     for i in 0..numthreads {
         threadchans[i]
             .send(MainToWorker {
@@ -303,4 +311,6 @@ where
             })
             .unwrap();
     }
+
+    // could probably do something with join handles here
 }
