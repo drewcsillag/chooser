@@ -165,7 +165,7 @@ impl ParChooser<'_> {
     }
 }
 
-pub fn run_par_choices<'a, F: 'static>(mut f: F, numthreads: usize)
+pub fn run_par_choices<'a, F: 'static>( f: F, numthreads: usize)
 where
     F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
 {
@@ -191,7 +191,7 @@ where
 
      
 
-    print!("Waiting for worker handles");
+    // print!("Waiting for worker handles");
     while ! worker_handles.is_empty() {
         let h = worker_handles.pop();
         match h {
@@ -251,7 +251,7 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
     loop {
         // get a message from a worker thread
         let message = mainrx.recv().unwrap().clone();
-        let tno = message.threadno;
+        // let tno = message.threadno;
         // println!("MAIN: got a message from thread {tno}");
         match message.putget {
             // stop the presses! break out of the loop
@@ -334,7 +334,7 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
             }
         }
         if !waiting {
-            println!("MAIN: we think we're done, exiting");
+            // println!("MAIN: we think we're done, exiting");
             break;
         }
     }
