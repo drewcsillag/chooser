@@ -165,46 +165,47 @@ impl ParChooser<'_> {
     }
 }
 
-pub fn run_par_choices<'a, F: 'static>(f: F, numthreads: usize)
+pub fn run_par_choices<'a, F>(f: F, numthreads: usize)
 where
     F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
 {
-    let (maintx, mainrx) = channel();
-    let mut threadchans = Vec::new();
+    thread::scope(|s| {
+        let (maintx, mainrx) = channel();
+        let mut threadchans = Vec::new();
 
-    let mut worker_handles = Vec::new();
-    // WORKERS
-    for threadno in 0..numthreads {
-        let (tx, rx) = channel();
-        threadchans.push(tx);
-        // gets snarfed into the thread spawn below
-        let maintx = maintx.clone();
+        let mut worker_handles = Vec::new();
+        // WORKERS
+        for threadno in 0..numthreads {
+            let (tx, rx) = channel();
+            threadchans.push(tx);
+            // gets snarfed into the thread spawn below
+            let maintx = maintx.clone();
 
-        worker_handles.push(thread::spawn(move || {
-            worker_thread(maintx, threadno, rx, f);
-        }));
-    }
-
-    let main_handle = thread::spawn(move || {
-        main_thread(mainrx, &threadchans, numthreads);
-    });
-
-    // print!("Waiting for worker handles");
-    while !worker_handles.is_empty() {
-        let h = worker_handles.pop();
-        match h {
-            Option::Some(h) => {
-                let _r = h.join();
-            }
-            Option::None => {}
+            worker_handles.push(s.spawn(move || {
+                worker_thread(maintx, threadno, rx, f);
+            }));
         }
-    }
 
-    let _mhj = main_handle.join();
-    // could probably do something with join handles here
+        let main_handle = thread::spawn(move || {
+            main_thread(mainrx, &threadchans, numthreads);
+        });
+
+        // print!("Waiting for worker handles");
+        loop {
+            let h = worker_handles.pop();
+            match h {
+                Option::Some(h) => {
+                    let _r = h.join();
+                }
+                Option::None => { break; }
+            }
+        }
+
+        let _mhj = main_handle.join();
+    });
 }
 
-fn worker_thread<F: 'static>(
+fn worker_thread<F>(
     maintx: Sender<WorkerToMain>,
     threadno: usize,
     rx: Receiver<MainToWorker>,
