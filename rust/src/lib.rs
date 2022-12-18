@@ -1,3 +1,4 @@
+// Single threaded implementationm
 pub struct Chooser<'a> {
     new_choices: Vec<usize>,
     pre_chosen: Vec<usize>,
@@ -55,17 +56,18 @@ where
     }
 }
 
+// Parallel implementation
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 enum WorkerCommandType {
     Get,
     Put,
     Stop,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 enum MainCommandType {
     Go,
     Stop,
@@ -124,12 +126,15 @@ impl ParChooser<'_> {
 
         return 0;
     }
+
     pub fn choose<'a, T>(&mut self, choices: &'a Vec<T>) -> &'a T {
         return &choices[self.choose_index(choices.len())];
     }
+
     pub fn pick<T>(&mut self, choices: &mut Vec<T>) -> T {
         return choices.remove(self.choose_index(choices.len()));
     }
+
     pub fn stop(&mut self) {
         self.ch
             .send(WorkerToMain {
@@ -150,7 +155,8 @@ where
         let mut threadchans = Vec::new();
 
         let mut worker_handles = Vec::new();
-        // WORKERS
+
+        // Kick off workers
         for threadno in 0..numthreads {
             let (tx, rx) = channel();
             threadchans.push(tx);
@@ -162,6 +168,7 @@ where
             }));
         }
 
+        // Kick off main (btw: moves threadchans)
         let main_handle = thread::spawn(move || {
             main_thread(mainrx, &threadchans, numthreads);
         });
@@ -179,6 +186,7 @@ where
             }
         }
 
+        // Join main thread
         let _mhj = main_handle.join();
     });
 }
@@ -203,7 +211,7 @@ fn worker_thread<F>(
         // Get a command from the main thread
         let command: MainToWorker = rx.recv().unwrap();
         match command.gostop {
-            // main thread told us to stop
+            // Main thread told us to stop
             MainCommandType::Stop => {
                 break;
             }
@@ -226,15 +234,15 @@ fn main_thread(
 ) {
     // The executions list
     let mut executions: Vec<Vec<usize>> = vec![vec![]];
-    // threads that are requesting for a chunk
-    let mut request = Vec::new();
+    // threads that are waiting for a chunk
+    let mut waiting = Vec::new();
 
     // threads that are processing a chunk
     let mut busy: Vec<bool> = Vec::new();
 
     for _i in 0..numthreads {
         busy.push(false);
-        request.push(false);
+        waiting.push(false);
     }
 
     loop {
@@ -254,13 +262,13 @@ fn main_thread(
                 // try to get an execution
                 let execution = executions.pop();
                 match execution {
-                    // no execution, we're not busy, and we're waiting on a request
+                    // No executions queued, so we're not busy, we'll leave them waiting on a request
                     None => {
-                        request[message.threadno] = true;
+                        waiting[message.threadno] = true;
                         busy[message.threadno] = false;
                         // println!("MAIN: queue is empty, they'll have to wait");
                     }
-                    // there was an execution, send it to the worker (and it's busy).
+                    // There was an execution, send it to the worker (and it's busy).
                     Some(value) => {
                         busy[message.threadno] = true;
                         // println!("MAIN: giving them something to do");
@@ -277,58 +285,57 @@ fn main_thread(
                     }
                 }
             }
-            // they're giving us an execution
+            // They're giving us a new execution
             WorkerCommandType::Put => {
                 // println!("MAIN: thread giving an execution");
                 let mut sent = false;
-                let v = message.execution.unwrap();
-                let nopt = Option::Some(v.clone());
+                let newexecution = message.execution.unwrap();
 
-                // are any threads waiting for one? give it to them
+                // Are any threads waiting for one? give it to them
                 for i in 0..numthreads {
-                    if request[i] {
+                    if waiting[i] {
                         // println!("MAIN: giving execution to waiting thread");
                         (*threadchans)[i]
                             .send(MainToWorker {
                                 gostop: MainCommandType::Go,
-                                execution: nopt,
+                                execution: Option::Some(newexecution.clone()),
                             })
                             .unwrap();
                         sent = true;
-                        request[i] = false;
+                        waiting[i] = false;
                         busy[i] = true;
                         break;
                     }
                 }
-                // no waiting threads? throw it into the executions vector
+                // No waiting threads? throw it into the executions vector
                 if !sent {
                     // println!("MAIN: no waiting threads, queueing it up");
-                    executions.push(v.to_vec());
+                    executions.push(newexecution.to_vec());
                 }
             }
         }
 
-        // command processed, is it time to be done
+        // Command processed, is it time to be done?
 
-        // if there are more things to execute, clearly not done.
+        // If there are more things to execute, clearly not done.
         if !executions.is_empty() {
             continue;
         }
 
         // Are any threads busy? then we're not done.
-        let mut waiting = false;
+        let mut anybusy = false;
         for i in 0..numthreads {
             if busy[i] {
-                waiting = true;
+                anybusy = true;
                 break;
             }
         }
-        if !waiting {
+        if !anybusy {
             // println!("MAIN: we think we're done, exiting");
             break;
         }
     }
-    // Tell all the threads to shut down
+    // Tell all the worker threads to shut down
     for i in 0..numthreads {
         threadchans[i]
             .send(MainToWorker {

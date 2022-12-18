@@ -4,7 +4,13 @@ mod sudoku;
 
 fn count_in_binary(c: &mut chooser::ParChooser) {
     let v = vec![0, 1];
-    println!("X: {0} {1} {2} {3}", c.choose(&v), c.choose(&v), c.choose(&v), c.choose(&v));
+    println!(
+        "X: {0} {1} {2} {3}",
+        c.choose(&v),
+        c.choose(&v),
+        c.choose(&v),
+        c.choose(&v)
+    );
 }
 
 fn magic_square(c: &mut chooser::ParChooser) {
@@ -65,7 +71,7 @@ fn main() {
             // [0,0,0, 0,0,0, 0,0,0],
             // [0,0,0, 0,0,0, 0,0,0],
             // [0,0,0, 0,0,0, 0,0,0]
-        [0, 3, 0, 6, 0, 0, 0, 8, 0],
+            [0, 3, 0, 6, 0, 0, 0, 8, 0],
             [0, 0, 9, 8, 0, 1, 7, 0, 2],
             [0, 0, 0, 5, 0, 0, 0, 0, 6],
             [0, 0, 0, 0, 1, 0, 0, 0, 3],

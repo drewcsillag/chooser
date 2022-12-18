@@ -60,9 +60,12 @@ fn candidates(indexes: &Indexes, row: usize, col: usize) -> Vec<u8> {
 
 pub fn solve_faster(board: [[u8; 9]; 9]) {
     let init_index = &index_board(board);
-    chooser::run_par_choices(|c| {
-        solve_innner(c, &mut init_index.clone());
-    }, 10)
+    chooser::run_par_choices(
+        |c| {
+            solve_innner(c, &mut init_index.clone());
+        },
+        10,
+    )
 }
 
 fn solve_innner(c: &mut chooser::ParChooser, indexes: &mut Indexes) {
