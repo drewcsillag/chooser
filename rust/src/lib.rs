@@ -55,7 +55,7 @@ where
     }
 }
 
-use std::sync::mpsc::{channel, Sender, Receiver};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 enum WorkerGetPut {
@@ -165,7 +165,7 @@ impl ParChooser<'_> {
     }
 }
 
-pub fn run_par_choices<'a, F: 'static>( f: F, numthreads: usize)
+pub fn run_par_choices<'a, F: 'static>(f: F, numthreads: usize)
 where
     F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
 {
@@ -186,16 +186,16 @@ where
     }
 
     let main_handle = thread::spawn(move || {
-    main_thread(mainrx, &threadchans, numthreads);
+        main_thread(mainrx, &threadchans, numthreads);
     });
 
-     
-
     // print!("Waiting for worker handles");
-    while ! worker_handles.is_empty() {
+    while !worker_handles.is_empty() {
         let h = worker_handles.pop();
         match h {
-            Option::Some(h) => { let _r = h.join(); },
+            Option::Some(h) => {
+                let _r = h.join();
+            }
             Option::None => {}
         }
     }
@@ -204,18 +204,23 @@ where
     // could probably do something with join handles here
 }
 
-fn worker_thread<F: 'static>(maintx: Sender<WorkerToMain>, threadno: usize, rx: Receiver<MainToWorker>, mut f: F) 
-where F: FnMut(&mut ParChooser) + std::marker::Send + Copy {
+fn worker_thread<F: 'static>(
+    maintx: Sender<WorkerToMain>,
+    threadno: usize,
+    rx: Receiver<MainToWorker>,
+    mut f: F,
+) where
+    F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
+{
     loop {
         // CAVEAT ignoring failure
         // Tell main thread to give us something
-        let _result = maintx
-            .send(WorkerToMain {
-                threadno: threadno,
-                putget: WorkerGetPut::Get,
-                execution: Option::None,
-            });
-        
+        let _result = maintx.send(WorkerToMain {
+            threadno: threadno,
+            putget: WorkerGetPut::Get,
+            execution: Option::None,
+        });
+
         // Get a command from the main thread
         let command: MainToWorker = rx.recv().unwrap();
         match command.gostop {
@@ -235,7 +240,11 @@ where F: FnMut(&mut ParChooser) + std::marker::Send + Copy {
     }
 }
 
-fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWorker>>, numthreads: usize) {
+fn main_thread(
+    mainrx: Receiver<WorkerToMain>,
+    threadchans: &Vec<Sender<MainToWorker>>,
+    numthreads: usize,
+) {
     // Main
     let mut executions: Vec<Vec<usize>> = vec![vec![]];
     // threads that are requesting for a chunk
@@ -246,7 +255,6 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
     for _i in 0..numthreads {
         busy.push(false);
         request.push(false);
-
     }
     loop {
         // get a message from a worker thread
@@ -275,14 +283,15 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
                     Some(value) => {
                         busy[message.threadno] = true;
                         // println!("MAIN: giving them something to do");
-                        let result = (*threadchans)[message.threadno]
-                            .send(MainToWorker {
-                                gostop: WorkerGoStop::Go,
-                                execution: Option::Some(value),
-                            });
+                        let result = (*threadchans)[message.threadno].send(MainToWorker {
+                            gostop: WorkerGoStop::Go,
+                            execution: Option::Some(value),
+                        });
                         match result {
-                            Result::Ok(_x) => { },
-                            Result::Err(x) => { println!("MAIN: ERROR got error {x}");}
+                            Result::Ok(_x) => {}
+                            Result::Err(x) => {
+                                println!("MAIN: ERROR got error {x}");
+                            }
                         }
                     }
                 }
