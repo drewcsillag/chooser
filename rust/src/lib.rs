@@ -58,51 +58,27 @@ where
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
-enum WorkerGetPut {
+#[derive(Debug, Copy, Clone)]
+enum WorkerCommandType {
     Get,
     Put,
     Stop,
 }
 
-enum WorkerGoStop {
+#[derive(Debug, Copy, Clone)]
+enum MainCommandType {
     Go,
     Stop,
 }
+
 pub struct WorkerToMain {
     threadno: usize,
-    putget: WorkerGetPut,
+    command: WorkerCommandType,
     execution: Option<Vec<usize>>,
-}
-impl WorkerToMain {
-    fn clone(&self) -> Self {
-        match self.putget {
-            WorkerGetPut::Get => {
-                return WorkerToMain {
-                    threadno: self.threadno,
-                    putget: WorkerGetPut::Get,
-                    execution: self.execution.clone(),
-                }
-            }
-            WorkerGetPut::Put => {
-                return WorkerToMain {
-                    threadno: self.threadno,
-                    putget: WorkerGetPut::Put,
-                    execution: self.execution.clone(),
-                }
-            }
-            WorkerGetPut::Stop => {
-                return WorkerToMain {
-                    threadno: self.threadno,
-                    putget: WorkerGetPut::Stop,
-                    execution: self.execution.clone(),
-                }
-            }
-        }
-    }
 }
 
 pub struct MainToWorker {
-    gostop: WorkerGoStop,
+    gostop: MainCommandType,
     execution: Option<Vec<usize>>,
 }
 
@@ -140,7 +116,7 @@ impl ParChooser<'_> {
             // CAUTION: if the send fails here, we currently don't care
             let _send_result = self.ch.send(WorkerToMain {
                 threadno: self.threadno,
-                putget: WorkerGetPut::Put,
+                command: WorkerCommandType::Put,
                 execution: Option::Some(new_exec),
             });
         }
@@ -158,7 +134,7 @@ impl ParChooser<'_> {
         self.ch
             .send(WorkerToMain {
                 threadno: self.threadno,
-                putget: WorkerGetPut::Stop,
+                command: WorkerCommandType::Stop,
                 execution: Option::None,
             })
             .unwrap();
@@ -197,7 +173,9 @@ where
                 Option::Some(h) => {
                     let _r = h.join();
                 }
-                Option::None => { break; }
+                Option::None => {
+                    break;
+                }
             }
         }
 
@@ -218,7 +196,7 @@ fn worker_thread<F>(
         // Tell main thread to give us something
         let _result = maintx.send(WorkerToMain {
             threadno: threadno,
-            putget: WorkerGetPut::Get,
+            command: WorkerCommandType::Get,
             execution: Option::None,
         });
 
@@ -226,11 +204,11 @@ fn worker_thread<F>(
         let command: MainToWorker = rx.recv().unwrap();
         match command.gostop {
             // main thread told us to stop
-            WorkerGoStop::Stop => {
+            MainCommandType::Stop => {
                 break;
             }
             // we got a chunk of work to do
-            WorkerGoStop::Go => {
+            MainCommandType::Go => {
                 f(&mut ParChooser::new(
                     threadno,
                     &maintx,
@@ -246,30 +224,32 @@ fn main_thread(
     threadchans: &Vec<Sender<MainToWorker>>,
     numthreads: usize,
 ) {
-    // Main
+    // The executions list
     let mut executions: Vec<Vec<usize>> = vec![vec![]];
     // threads that are requesting for a chunk
     let mut request = Vec::new();
 
     // threads that are processing a chunk
     let mut busy: Vec<bool> = Vec::new();
+
     for _i in 0..numthreads {
         busy.push(false);
         request.push(false);
     }
+
     loop {
         // get a message from a worker thread
-        let message = mainrx.recv().unwrap().clone();
+        let message = mainrx.recv().unwrap();
         // let tno = message.threadno;
         // println!("MAIN: got a message from thread {tno}");
-        match message.putget {
+        match message.command {
             // stop the presses! break out of the loop
-            WorkerGetPut::Stop => {
+            WorkerCommandType::Stop => {
                 // println!("MAIN: worker said STOP!");
                 break;
             }
             // they want something to do
-            WorkerGetPut::Get => {
+            WorkerCommandType::Get => {
                 // println!("MAIN: asked for something to do");
                 // try to get an execution
                 let execution = executions.pop();
@@ -285,7 +265,7 @@ fn main_thread(
                         busy[message.threadno] = true;
                         // println!("MAIN: giving them something to do");
                         let result = (*threadchans)[message.threadno].send(MainToWorker {
-                            gostop: WorkerGoStop::Go,
+                            gostop: MainCommandType::Go,
                             execution: Option::Some(value),
                         });
                         match result {
@@ -298,7 +278,7 @@ fn main_thread(
                 }
             }
             // they're giving us an execution
-            WorkerGetPut::Put => {
+            WorkerCommandType::Put => {
                 // println!("MAIN: thread giving an execution");
                 let mut sent = false;
                 let v = message.execution.unwrap();
@@ -310,7 +290,7 @@ fn main_thread(
                         // println!("MAIN: giving execution to waiting thread");
                         (*threadchans)[i]
                             .send(MainToWorker {
-                                gostop: WorkerGoStop::Go,
+                                gostop: MainCommandType::Go,
                                 execution: nopt,
                             })
                             .unwrap();
@@ -352,7 +332,7 @@ fn main_thread(
     for i in 0..numthreads {
         threadchans[i]
             .send(MainToWorker {
-                gostop: WorkerGoStop::Stop,
+                gostop: MainCommandType::Stop,
                 execution: Option::None,
             })
             .unwrap();
