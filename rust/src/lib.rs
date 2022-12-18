@@ -252,16 +252,16 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
         // get a message from a worker thread
         let message = mainrx.recv().unwrap().clone();
         let tno = message.threadno;
-        println!("MAIN: got a message from thread {tno}");
+        // println!("MAIN: got a message from thread {tno}");
         match message.putget {
             // stop the presses! break out of the loop
             WorkerGetPut::Stop => {
-                println!("MAIN: worker said STOP!");
+                // println!("MAIN: worker said STOP!");
                 break;
             }
             // they want something to do
             WorkerGetPut::Get => {
-                println!("MAIN: asked for something to do");
+                // println!("MAIN: asked for something to do");
                 // try to get an execution
                 let execution = executions.pop();
                 match execution {
@@ -269,12 +269,12 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
                     None => {
                         request[message.threadno] = true;
                         busy[message.threadno] = false;
-                        println!("MAIN: queue is empty, they'll have to wait");
+                        // println!("MAIN: queue is empty, they'll have to wait");
                     }
                     // there was an execution, send it to the worker (and it's busy).
                     Some(value) => {
                         busy[message.threadno] = true;
-                        println!("MAIN: giving them something to do");
+                        // println!("MAIN: giving them something to do");
                         let result = (*threadchans)[message.threadno]
                             .send(MainToWorker {
                                 gostop: WorkerGoStop::Go,
@@ -289,7 +289,7 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
             }
             // they're giving us an execution
             WorkerGetPut::Put => {
-                println!("MAIN: thread giving an execution");
+                // println!("MAIN: thread giving an execution");
                 let mut sent = false;
                 let v = message.execution.unwrap();
                 let nopt = Option::Some(v.clone());
@@ -297,7 +297,7 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
                 // are any threads waiting for one? give it to them
                 for i in 0..numthreads {
                     if request[i] {
-                        println!("MAIN: giving execution to waiting thread");
+                        // println!("MAIN: giving execution to waiting thread");
                         (*threadchans)[i]
                             .send(MainToWorker {
                                 gostop: WorkerGoStop::Go,
@@ -312,7 +312,7 @@ fn main_thread(mainrx: Receiver<WorkerToMain>, threadchans: &Vec<Sender<MainToWo
                 }
                 // no waiting threads? throw it into the executions vector
                 if !sent {
-                    println!("MAIN: no waiting threads, queueing it up");
+                    // println!("MAIN: no waiting threads, queueing it up");
                     executions.push(v.to_vec());
                 }
             }
