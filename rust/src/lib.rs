@@ -232,36 +232,39 @@ where
 
                     match execution_x {
                         Option::Some(execution) => {
-                            bc.fetch_add(1, Ordering::Acquire); // we're busy
-                                                                // end of spinlock protected area
+                            // we're busy
+                            bc.fetch_add(1, Ordering::Acquire);
                             sl.store(false, Ordering::Release);
-
-                            // make a parchooser
-                            {
-                                let mut parc = FastParChooser::new(threadno, execution, &ttd);
-                                f(&mut parc);
-
-                                // spinlock to get acces to executions
-                                spinlock(&sl);
-                                let mut exs = eee.take();
-                                exs.extend(parc.newexecutions.into_iter());
-                                eee.store(exs);
-                            }
-                            bc.fetch_sub(1, Ordering::Acquire); // we're no longer busy
-
                             // end of spinlock protected area
+
+                            let mut parc = FastParChooser::new(threadno, execution, &ttd);
+                            f(&mut parc);
+
+                            // spinlock to get acces to executions
+                            spinlock(&sl);
+                            let mut exs = eee.take();
+                            exs.extend(parc.newexecutions.into_iter());
+                            eee.store(exs);
+                            bc.fetch_sub(1, Ordering::Acquire);
                             sl.store(false, Ordering::Release);
+                            // end of spinlock protected area
                         }
                         Option::None => {
-                            // end of spinlock protected area
                             sl.store(false, Ordering::Release);
+                            // end of spinlock protected area
+
+                            let c = bc.load(Ordering::Acquire);
+
+                            if c == 0 {
+                                break; // all done
+                            }
                         }
                     }
-                } //
+                }
             }));
         }
 
-        println!("Waiting for worker handles");
+        // println!("Waiting for worker handles");
         loop {
             let h = worker_handles.pop();
             match h {
@@ -273,7 +276,7 @@ where
                 }
             }
         }
-        println!("All workers stopped");
+        // println!("All workers stopped");
     })
 }
 
