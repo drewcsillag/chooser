@@ -76,7 +76,7 @@ enum MainCommandType {
 pub struct WorkerToMain {
     threadno: usize,
     command: WorkerCommandType,
-    execution: Option<Vec<usize>>,
+    executions: Option<Vec<Vec<usize>>>,
 }
 
 pub struct MainToWorker {
@@ -90,16 +90,18 @@ pub struct ParChooser<'a> {
     new_choices: Vec<usize>,
     pre_chosen: Vec<usize>,
     index: usize,
+    newexecutions: Vec<Vec<usize>>,
 }
 
 impl ParChooser<'_> {
     pub fn new(threadno: usize, ch: &Sender<WorkerToMain>, execution: Vec<usize>) -> ParChooser {
         return ParChooser {
-            threadno: threadno,
-            ch: ch,
+            threadno,
+            ch,
             new_choices: Vec::new(),
             pre_chosen: execution,
             index: 0,
+            newexecutions: Vec::new(),
         };
     }
 
@@ -113,14 +115,7 @@ impl ParChooser<'_> {
             let mut new_exec = self.pre_chosen.to_vec().to_owned();
             new_exec.append(&mut self.new_choices.to_owned());
             new_exec.push(choice);
-            // let tno = self.threadno;
-            // println!("Thread {tno} sending new execution");
-            // CAUTION: if the send fails here, we currently don't care
-            let _send_result = self.ch.send(WorkerToMain {
-                threadno: self.threadno,
-                command: WorkerCommandType::Put,
-                execution: Option::Some(new_exec),
-            });
+            self.newexecutions.push(new_exec);
         }
         self.new_choices.push(0);
 
@@ -140,7 +135,7 @@ impl ParChooser<'_> {
             .send(WorkerToMain {
                 threadno: self.threadno,
                 command: WorkerCommandType::Stop,
-                execution: Option::None,
+                executions: Option::None,
             })
             .unwrap();
     }
@@ -203,9 +198,9 @@ fn worker_thread<F>(
         // CAVEAT ignoring failure
         // Tell main thread to give us something
         let _result = maintx.send(WorkerToMain {
-            threadno: threadno,
+            threadno,
             command: WorkerCommandType::Get,
-            execution: Option::None,
+            executions: Option::None,
         });
 
         // Get a command from the main thread
@@ -217,11 +212,20 @@ fn worker_thread<F>(
             }
             // we got a chunk of work to do
             MainCommandType::Go => {
-                f(&mut ParChooser::new(
-                    threadno,
-                    &maintx,
-                    command.execution.unwrap(),
-                ));
+                let mut pc = ParChooser::new(threadno, &maintx, command.execution.unwrap());
+                f(&mut pc);
+                if !pc.newexecutions.is_empty() {
+                    match maintx.send(WorkerToMain {
+                        threadno,
+                        command: WorkerCommandType::Put,
+                        executions: Option::Some(pc.newexecutions),
+                    }) {
+                        Result::Ok(_whatever) => {}
+                        Result::Err(_x) => {
+                            // println!("FAILED SENDING TO MAIN {x}");
+                        }
+                    }
+                }
             }
         }
     }
@@ -278,8 +282,8 @@ fn main_thread(
                         });
                         match result {
                             Result::Ok(_x) => {}
-                            Result::Err(x) => {
-                                println!("MAIN: ERROR got error {x}");
+                            Result::Err(_x) => {
+                                // println!("MAIN: ERROR got error {x}");
                             }
                         }
                     }
@@ -287,30 +291,30 @@ fn main_thread(
             }
             // They're giving us a new execution
             WorkerCommandType::Put => {
-                // println!("MAIN: thread giving an execution");
-                let mut sent = false;
-                let newexecution = message.execution.unwrap();
+                let mut newexecutions = message.executions.unwrap();
+                // let ne = newexecutions.len();
+                // let tno = message.threadno;
+                // println!("MAIN: thread giving an execution {tno} : {ne}");
 
                 // Are any threads waiting for one? give it to them
                 for i in 0..numthreads {
-                    if waiting[i] {
-                        // println!("MAIN: giving execution to waiting thread");
+                    if waiting[i] && !newexecutions.is_empty() {
+                        // println!("MAIN: giving execution to waiting thread {i}");
                         (*threadchans)[i]
                             .send(MainToWorker {
                                 gostop: MainCommandType::Go,
-                                execution: Option::Some(newexecution.clone()),
+                                execution: Option::Some(newexecutions.pop().unwrap()),
                             })
                             .unwrap();
-                        sent = true;
                         waiting[i] = false;
                         busy[i] = true;
-                        break;
                     }
                 }
+                // let ie = newexecutions.is_empty();
                 // No waiting threads? throw it into the executions vector
-                if !sent {
+                if !newexecutions.is_empty() {
                     // println!("MAIN: no waiting threads, queueing it up");
-                    executions.push(newexecution.to_vec());
+                    executions.extend(newexecutions.into_iter());
                 }
             }
         }
