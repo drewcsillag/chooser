@@ -456,8 +456,8 @@ fn fast_worker_thread<F>(
     F: FnMut(&mut FastParChooser) + std::marker::Send + Copy,
 {
     loop {
-        // spinlock to get access to executions
-        spinlock(&spin_lock);
+        // ----- spinlock to get access to executions
+        wait_on_spin_lock(&spin_lock);
 
         let execution = pop_execution(&executions_cell);
 
@@ -468,8 +468,9 @@ fn fast_worker_thread<F>(
                 // lest we bail out prematurely
                 busy.fetch_add(1, Ordering::Acquire);
                 spin_lock.store(false, Ordering::Release);
-                // end of spinlock protected area
+                // ----- end of spinlock protected area
 
+                // OPTIMIZATION NOTE: could probably make a single mutable one and reset it...
                 let mut parc = FastParChooser::new(threadno, execution, &timetodie);
                 f(&mut parc);
 
@@ -478,24 +479,23 @@ fn fast_worker_thread<F>(
                     break;
                 }
 
-                // spinlock to get acces to executions
-                spinlock(&spin_lock);
-
+                // ----- spinlock to get acces to executions
+                wait_on_spin_lock(&spin_lock);
                 extend_executions(&executions_cell, parc.newexecutions);
                 spin_lock.store(false, Ordering::Release);
-                // end of spinlock protected area
+                // ----- end of spinlock protected area
 
                 // we're not busy any more
                 busy.fetch_sub(1, Ordering::Acquire);
             }
             Option::None => {
                 spin_lock.store(false, Ordering::Release);
-                // end of spinlock protected area
+                // ----- end of spinlock protected area
 
-                let c = busy.load(Ordering::Acquire);
+                let num_busy_threads = busy.load(Ordering::Acquire);
 
-                if c == 0 {
-                    break; // all done
+                if num_busy_threads == 0 {
+                    break; // all done: no executions and no one busy
                 }
             }
         }
@@ -513,7 +513,7 @@ fn pop_execution(executions_cell: &Arc<AtomicCell<Vec<Vec<usize>>>>) -> Option<V
     unsafe { (&mut *(executions_cell.as_ptr())).pop() }
 }
 
-fn spinlock(spinlock: &Arc<AtomicBool>) {
+fn wait_on_spin_lock(spinlock: &Arc<AtomicBool>) {
     loop {
         let res = spinlock.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed);
         match res {
