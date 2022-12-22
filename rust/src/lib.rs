@@ -435,51 +435,7 @@ where
             let timetodie = timetodie_main.clone();
 
             worker_handles.push(s.spawn(move || {
-                loop {
-                    // spinlock to get access to executions
-                    spinlock(&spin_lock);
-
-                    let execution = pop_execution(&executions_cell);
-
-                    match execution {
-                        Option::Some(execution) => {
-                            // we're busy - have to do this inside, because better to say we're busier
-                            // than we might be (compared to where we decrement it ouside the spinlock)
-                            // lest we bail out prematurely
-                            busy.fetch_add(1, Ordering::Acquire);
-                            spin_lock.store(false, Ordering::Release);
-                            // end of spinlock protected area
-
-                            let mut parc = FastParChooser::new(threadno, execution, &timetodie);
-                            f(&mut parc);
-
-                            // if time to drop dead, die
-                            if timetodie.load(Ordering::Acquire) {
-                                break;
-                            }
-
-                            // spinlock to get acces to executions
-                            spinlock(&spin_lock);
-
-                            extend_executions(&executions_cell, parc.newexecutions);
-                            spin_lock.store(false, Ordering::Release);
-                            // end of spinlock protected area
-
-                            // we're not busy any more
-                            busy.fetch_sub(1, Ordering::Acquire);
-                        }
-                        Option::None => {
-                            spin_lock.store(false, Ordering::Release);
-                            // end of spinlock protected area
-
-                            let c = busy.load(Ordering::Acquire);
-
-                            if c == 0 {
-                                break; // all done
-                            }
-                        }
-                    }
-                }
+                fast_worker_thread(spin_lock, executions_cell, busy, threadno, timetodie, f);
             }));
         }
 
@@ -497,6 +453,63 @@ where
         }
         // println!("All workers stopped");
     })
+}
+
+fn fast_worker_thread<F>(
+    spin_lock: Arc<AtomicBool>,
+    executions_cell: Arc<AtomicCell<Vec<Vec<usize>>>>,
+    busy: Arc<AtomicUsize>,
+    threadno: usize,
+    timetodie: Arc<AtomicBool>,
+    mut f: F,
+) where
+    F: FnMut(&mut FastParChooser) + std::marker::Send + Copy,
+{
+    loop {
+        // spinlock to get access to executions
+        spinlock(&spin_lock);
+
+        let execution = pop_execution(&executions_cell);
+
+        match execution {
+            Option::Some(execution) => {
+                // we're busy - have to do this inside, because better to say we're busier
+                // than we might be (compared to where we decrement it ouside the spinlock)
+                // lest we bail out prematurely
+                busy.fetch_add(1, Ordering::Acquire);
+                spin_lock.store(false, Ordering::Release);
+                // end of spinlock protected area
+
+                let mut parc = FastParChooser::new(threadno, execution, &timetodie);
+                f(&mut parc);
+
+                // if time to drop dead, die
+                if timetodie.load(Ordering::Acquire) {
+                    break;
+                }
+
+                // spinlock to get acces to executions
+                spinlock(&spin_lock);
+
+                extend_executions(&executions_cell, parc.newexecutions);
+                spin_lock.store(false, Ordering::Release);
+                // end of spinlock protected area
+
+                // we're not busy any more
+                busy.fetch_sub(1, Ordering::Acquire);
+            }
+            Option::None => {
+                spin_lock.store(false, Ordering::Release);
+                // end of spinlock protected area
+
+                let c = busy.load(Ordering::Acquire);
+
+                if c == 0 {
+                    break; // all done
+                }
+            }
+        }
+    }
 }
 
 fn extend_executions(
