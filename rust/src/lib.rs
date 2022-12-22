@@ -439,19 +439,9 @@ where
             }));
         }
 
-        // println!("Waiting for worker handles");
-        loop {
-            let h = worker_handles.pop();
-            match h {
-                Option::Some(h) => {
-                    let _r = h.join();
-                }
-                Option::None => {
-                    break;
-                }
-            }
+        for handle in worker_handles.into_iter() {
+            let _x = handle.join();
         }
-        // println!("All workers stopped");
     })
 }
 
