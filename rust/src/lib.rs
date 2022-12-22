@@ -141,10 +141,10 @@ impl ParChooser<'_> {
     }
 }
 
+use crossbeam::atomic::AtomicCell;
 use std::hint;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-
 pub struct FastParChooser<'a> {
     threadno: usize,
     new_choices: Vec<usize>,
@@ -205,55 +205,65 @@ where
     F: FnMut(&mut FastParChooser) + std::marker::Send + Copy,
 {
     thread::scope(|s| {
-        let busy = Arc::new(AtomicUsize::new(0));
+        // The number of threads that are busy doing things
+        let busy_main = Arc::new(AtomicUsize::new(0));
 
-        let spinny = Arc::new(AtomicBool::new(false));
+        // the boolean to make the spinlock with
+        let spin_lock_main = Arc::new(AtomicBool::new(false));
         // The executions list
         let raw_exec = vec![vec![]];
-        let executions_m = Arc::new(crossbeam::atomic::AtomicCell::new(raw_exec));
+        let executions_cell_main = Arc::new(crossbeam::atomic::AtomicCell::new(raw_exec));
+
+        // Bail early!
+        let timetodie_main = Arc::new(AtomicBool::new(false));
 
         let mut worker_handles = Vec::new();
 
-        // need a bool for time to die early and have it obeyed....
-        let timetodie = Arc::new(AtomicBool::new(false));
         for threadno in 0..numthreads {
-            let sl = spinny.clone();
-            let bc = busy.clone();
-            let eee = executions_m.clone();
-            let ttd = timetodie.clone();
+            let spin_lock = spin_lock_main.clone();
+            let busy = busy_main.clone();
+            let executions_cell = executions_cell_main.clone();
+            let timetodie = timetodie_main.clone();
 
             worker_handles.push(s.spawn(move || {
                 loop {
-                    // spinlock to get acces to executions
-                    spinlock(&sl);
-                    let mut v = eee.take();
-                    let execution_x: Option<Vec<usize>> = v.pop();
-                    eee.store(v);
+                    // spinlock to get access to executions
+                    spinlock(&spin_lock);
 
-                    match execution_x {
+                    let execution = pop_execution(&executions_cell);
+
+                    match execution {
                         Option::Some(execution) => {
-                            // we're busy
-                            bc.fetch_add(1, Ordering::Acquire);
-                            sl.store(false, Ordering::Release);
+                            // we're busy - have to do this inside, because better to say we're busier
+                            // than we might be (compared to where we decrement it ouside the spinlock)
+                            // lest we bail out prematurely
+                            busy.fetch_add(1, Ordering::Acquire);
+                            spin_lock.store(false, Ordering::Release);
                             // end of spinlock protected area
 
-                            let mut parc = FastParChooser::new(threadno, execution, &ttd);
+                            let mut parc = FastParChooser::new(threadno, execution, &timetodie);
                             f(&mut parc);
 
+                            // if time to drop dead, die
+                            if timetodie.load(Ordering::Acquire) {
+                                break;
+                            }
+
                             // spinlock to get acces to executions
-                            spinlock(&sl);
-                            let mut exs = eee.take();
-                            exs.extend(parc.newexecutions.into_iter());
-                            eee.store(exs);
-                            bc.fetch_sub(1, Ordering::Acquire);
-                            sl.store(false, Ordering::Release);
-                            // end of spinlock protected area
-                        }
-                        Option::None => {
-                            sl.store(false, Ordering::Release);
+                            spinlock(&spin_lock);
+
+                            extend_executions(&executions_cell, parc.newexecutions);
+                            spin_lock.store(false, Ordering::Release);
                             // end of spinlock protected area
 
-                            let c = bc.load(Ordering::Acquire);
+                            // we're not busy any more
+                            busy.fetch_sub(1, Ordering::Acquire);
+                        }
+                        Option::None => {
+                            spin_lock.store(false, Ordering::Release);
+                            // end of spinlock protected area
+
+                            let c = busy.load(Ordering::Acquire);
 
                             if c == 0 {
                                 break; // all done
@@ -280,9 +290,20 @@ where
     })
 }
 
-fn spinlock(sl: &Arc<AtomicBool>) {
+fn extend_executions(
+    executions_cell: &Arc<AtomicCell<Vec<Vec<usize>>>>,
+    newexecutions: Vec<Vec<usize>>,
+) {
+    unsafe { (&mut *(executions_cell.as_ptr())).extend(newexecutions.into_iter()) }
+}
+
+fn pop_execution(executions_cell: &Arc<AtomicCell<Vec<Vec<usize>>>>) -> Option<Vec<usize>> {
+    unsafe { (&mut *(executions_cell.as_ptr())).pop() }
+}
+
+fn spinlock(spinlock: &Arc<AtomicBool>) {
     loop {
-        let res = sl.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed);
+        let res = spinlock.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed);
         match res {
             Result::Ok(_) => {
                 break;
@@ -293,6 +314,7 @@ fn spinlock(sl: &Arc<AtomicBool>) {
         }
     }
 }
+
 pub fn run_par_choices<'a, F>(f: F, numthreads: usize)
 where
     F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
