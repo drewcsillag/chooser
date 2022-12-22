@@ -141,6 +141,155 @@ impl ParChooser<'_> {
     }
 }
 
+use std::hint;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
+
+pub struct FastParChooser<'a> {
+    threadno: usize,
+    new_choices: Vec<usize>,
+    pre_chosen: Vec<usize>,
+    index: usize,
+    newexecutions: Vec<Vec<usize>>,
+    timetodie: &'a Arc<AtomicBool>,
+}
+
+impl FastParChooser<'_> {
+    pub fn new(
+        threadno: usize,
+        execution: Vec<usize>,
+        timetodie: &Arc<AtomicBool>,
+    ) -> FastParChooser {
+        return FastParChooser {
+            threadno,
+            new_choices: Vec::new(),
+            pre_chosen: execution,
+            index: 0,
+            newexecutions: Vec::new(),
+            timetodie: timetodie,
+        };
+    }
+
+    pub fn choose_index(&mut self, num_items: usize) -> usize {
+        if self.index < self.pre_chosen.len() {
+            let ret = self.pre_chosen[self.index];
+            self.index = self.index + 1;
+            return ret;
+        }
+        for choice in 1..num_items {
+            let mut new_exec = self.pre_chosen.to_vec().to_owned();
+            new_exec.append(&mut self.new_choices.to_owned());
+            new_exec.push(choice);
+            self.newexecutions.push(new_exec);
+        }
+        self.new_choices.push(0);
+
+        return 0;
+    }
+
+    pub fn choose<'a, T>(&mut self, choices: &'a Vec<T>) -> &'a T {
+        return &choices[self.choose_index(choices.len())];
+    }
+
+    pub fn pick<T>(&mut self, choices: &mut Vec<T>) -> T {
+        return choices.remove(self.choose_index(choices.len()));
+    }
+
+    pub fn stop(&mut self) {
+        self.timetodie.store(true, Ordering::SeqCst)
+    }
+}
+
+pub fn run_fast_par_choices<'a, F>(mut f: F, numthreads: usize)
+where
+    F: FnMut(&mut FastParChooser) + std::marker::Send + Copy,
+{
+    thread::scope(|s| {
+        let busy = Arc::new(AtomicUsize::new(0));
+
+        let spinny = Arc::new(AtomicBool::new(false));
+        // The executions list
+        let raw_exec = vec![vec![]];
+        let executions_m = Arc::new(crossbeam::atomic::AtomicCell::new(raw_exec));
+
+        let mut worker_handles = Vec::new();
+
+        // need a bool for time to die early and have it obeyed....
+        let timetodie = Arc::new(AtomicBool::new(false));
+        for threadno in 0..numthreads {
+            let sl = spinny.clone();
+            let bc = busy.clone();
+            let eee = executions_m.clone();
+            let ttd = timetodie.clone();
+
+            worker_handles.push(s.spawn(move || {
+                loop {
+                    // spinlock to get acces to executions
+                    spinlock(&sl);
+                    let mut v = eee.take();
+                    let execution_x: Option<Vec<usize>> = v.pop();
+                    eee.store(v);
+
+                    match execution_x {
+                        Option::Some(execution) => {
+                            bc.fetch_add(1, Ordering::Acquire); // we're busy
+                                                                // end of spinlock protected area
+                            sl.store(false, Ordering::Release);
+
+                            // make a parchooser
+                            {
+                                let mut parc = FastParChooser::new(threadno, execution, &ttd);
+                                f(&mut parc);
+
+                                // spinlock to get acces to executions
+                                spinlock(&sl);
+                                let mut exs = eee.take();
+                                exs.extend(parc.newexecutions.into_iter());
+                                eee.store(exs);
+                            }
+                            bc.fetch_sub(1, Ordering::Acquire); // we're no longer busy
+
+                            // end of spinlock protected area
+                            sl.store(false, Ordering::Release);
+                        }
+                        Option::None => {
+                            // end of spinlock protected area
+                            sl.store(false, Ordering::Release);
+                        }
+                    }
+                } //
+            }));
+        }
+
+        println!("Waiting for worker handles");
+        loop {
+            let h = worker_handles.pop();
+            match h {
+                Option::Some(h) => {
+                    let _r = h.join();
+                }
+                Option::None => {
+                    break;
+                }
+            }
+        }
+        println!("All workers stopped");
+    })
+}
+
+fn spinlock(sl: &Arc<AtomicBool>) {
+    loop {
+        let res = sl.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed);
+        match res {
+            Result::Ok(_) => {
+                break;
+            }
+            Result::Err(_) => {
+                hint::spin_loop();
+            }
+        }
+    }
+}
 pub fn run_par_choices<'a, F>(f: F, numthreads: usize)
 where
     F: FnMut(&mut ParChooser) + std::marker::Send + Copy,

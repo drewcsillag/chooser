@@ -2,7 +2,7 @@ extern crate chooser;
 
 mod sudoku;
 
-fn count_in_binary(c: &mut chooser::ParChooser) {
+fn count_in_binary(c: &mut chooser::FastParChooser) {
     let v = vec![0, 1];
     println!(
         "X: {0} {1} {2} {3}",
@@ -13,7 +13,7 @@ fn count_in_binary(c: &mut chooser::ParChooser) {
     );
 }
 
-fn magic_square(c: &mut chooser::ParChooser) {
+fn magic_square(c: &mut chooser::FastParChooser) {
     let left = &mut vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
     let mut square = vec![];
     square.push(c.pick(left));
@@ -52,34 +52,34 @@ fn magic_square(c: &mut chooser::ParChooser) {
     // c.stop(); //stop at first solution
 }
 fn main() {
-    chooser::run_par_choices(count_in_binary, 8);
+    chooser::run_fast_par_choices(count_in_binary, 8);
     println!();
-    chooser::run_par_choices(magic_square, 15);
+    chooser::run_fast_par_choices(magic_square, 15);
     println!();
     // chooser::run_choices(|c|
-    sudoku::solve_faster(
-        // c,
-        [
-            // [0,0,0, 0,0,0, 0,0,0],
-            // [0,0,0, 0,0,0, 0,0,0],
-            // [0,0,0, 0,0,0, 0,0,0],
+    // sudoku::solve_faster(
+    //     // c,
+    //     [
+    //         // [0,0,0, 0,0,0, 0,0,0],
+    //         // [0,0,0, 0,0,0, 0,0,0],
+    //         // [0,0,0, 0,0,0, 0,0,0],
 
-            // [0,0,0, 0,0,0, 0,0,0],
-            // [0,0,1, 0,0,0, 0,0,0],
-            // [0,0,0, 0,0,0, 2,0,0],
+    //         // [0,0,0, 0,0,0, 0,0,0],
+    //         // [0,0,1, 0,0,0, 0,0,0],
+    //         // [0,0,0, 0,0,0, 2,0,0],
 
-            // [0,0,0, 0,0,0, 0,0,0],
-            // [0,0,0, 0,0,0, 0,0,0],
-            // [0,0,0, 0,0,0, 0,0,0]
-            [0, 3, 0, 6, 0, 0, 0, 8, 0],
-            [0, 0, 9, 8, 0, 1, 7, 0, 2],
-            [0, 0, 0, 5, 0, 0, 0, 0, 6],
-            [0, 0, 0, 0, 1, 0, 0, 0, 3],
-            [0, 8, 5, 0, 0, 0, 9, 0, 4],
-            [0, 7, 0, 0, 2, 0, 0, 0, 0],
-            [0, 9, 0, 0, 0, 7, 0, 0, 0],
-            [0, 5, 3, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 9, 0, 0, 4, 7],
-        ],
-    );
+    //         // [0,0,0, 0,0,0, 0,0,0],
+    //         // [0,0,0, 0,0,0, 0,0,0],
+    //         // [0,0,0, 0,0,0, 0,0,0]
+    //         [0, 3, 0, 6, 0, 0, 0, 8, 0],
+    //         [0, 0, 9, 8, 0, 1, 7, 0, 2],
+    //         [0, 0, 0, 5, 0, 0, 0, 0, 6],
+    //         [0, 0, 0, 0, 1, 0, 0, 0, 3],
+    //         [0, 8, 5, 0, 0, 0, 9, 0, 4],
+    //         [0, 7, 0, 0, 2, 0, 0, 0, 0],
+    //         [0, 9, 0, 0, 0, 7, 0, 0, 0],
+    //         [0, 5, 3, 0, 0, 0, 0, 0, 0],
+    //         [0, 0, 0, 0, 9, 0, 0, 4, 7],
+    //     ],
+    // );
 }

@@ -10,3 +10,4 @@ name = "example"
 test = false
 
 [dependencies]
+crossbeam = "0.8.2"
