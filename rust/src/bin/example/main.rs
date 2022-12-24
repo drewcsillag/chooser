@@ -59,36 +59,9 @@ fn main() {
     // println!("\nMAGIC SQUARES");
     // chooser::bparchooser::run_choices(magic_square, 8);
     println!("\nSUDOKU");
-
-    // sudoku::solve_faster(
-    //     [
-
-    //         [0, 3, 0, 6, 0, 0, 0, 8, 0],
-    //         [0, 0, 9, 8, 0, 1, 7, 0, 2],
-    //         [0, 0, 0, 5, 0, 0, 0, 0, 6],
-    //         [0, 0, 0, 0, 1, 0, 0, 0, 3],
-    //         [0, 8, 5, 0, 0, 0, 9, 0, 4],
-    //         [0, 7, 0, 0, 2, 0, 0, 0, 0],
-    //         [0, 9, 0, 0, 0, 7, 0, 0, 0],
-    //         [0, 5, 3, 0, 0, 0, 0, 0, 0],
-    //         [0, 0, 0, 0, 9, 0, 0, 4, 7],
-    //     ],
-    // );
-    
-
+    let n = 400;
 
     let board = [
-        // [0,0,0, 0,0,0, 0,0,0],
-        // [0,0,0, 0,0,0, 0,0,0],
-        // [0,0,0, 0,0,0, 0,0,0],
-
-        // [0,0,0, 0,0,0, 0,0,0],
-        // [0,0,1, 0,0,0, 0,0,0],
-        // [0,0,0, 0,0,0, 2,0,0],
-
-        // [0,0,0, 0,0,0, 0,0,0],
-        // [0,0,0, 0,0,0, 0,0,0],
-        // [0,0,0, 0,0,0, 0,0,0]
         [0, 3, 0, 6, 0, 0, 0, 8, 0],
         [0, 0, 9, 8, 0, 1, 7, 0, 2],
         [0, 0, 0, 5, 0, 0, 0, 0, 6],
@@ -101,42 +74,30 @@ fn main() {
     ];
 
     let st = std::time::Instant::now();
-    for _i in 1..30 {
-        sudoku::solve_faster_lf(
-            // c,
-            board
-        );
+    for _i in 1..n {
+        sudoku::solve_faster_lf(board);
     }
-    let el = st.elapsed().as_nanos() / 30;
+    let el = st.elapsed().as_nanos() / n;
     println!("LF elapsed {el} nanos");
 
-    let st = std::time::Instant::now();
-    for _i in 1..30 {
-        sudoku::solve_faster_bp(
-            // c,
-            board
-        );
-    }
-    let el = st.elapsed().as_nanos() / 30;
-    println!("BP elapsed {el} nanos");
+    // let st = std::time::Instant::now();
+    // for _i in 1..N {
+    //     sudoku::solve_faster_bp(board);
+    // }
+    // let el = st.elapsed().as_nanos() / N;
+    // println!("BP elapsed {el} nanos");
+
+    // let st = std::time::Instant::now();
+    // for _i in 1..N {
+    //     sudoku::solve_faster_par(board);
+    // }
+    // let el = st.elapsed().as_nanos() / N;
+    // println!("PA elapsed {el} nanos");
 
     let st = std::time::Instant::now();
-    for _i in 1..30 {
-        sudoku::solve_faster_par(
-            // c,
-            board
-        );
+    for _i in 1..n {
+        sudoku::solve_faster(board);
     }
-    let el = st.elapsed().as_nanos() / 30;
-    println!("PA elapsed {el} nanos");
-
-    let st = std::time::Instant::now();
-    for _i in 1..30 {
-        sudoku::solve_faster(
-            // c,
-            board
-        );
-    }
-    let el = st.elapsed().as_nanos() / 30;
+    let el = st.elapsed().as_nanos() / n;
     println!("ST elapsed {el} nanos");
 }
