@@ -5,7 +5,9 @@ mod sudoku;
 fn count_in_binary(c: &mut chooser::bparchooser::Chooser) {
     let v = vec![0, 1];
     println!(
-        "X: {0} {1} {2} {3}",
+        "X: {0} {1} {2} {3} {4} {5}",
+        c.choose(&v),
+        c.choose(&v),
         c.choose(&v),
         c.choose(&v),
         c.choose(&v),
@@ -13,7 +15,7 @@ fn count_in_binary(c: &mut chooser::bparchooser::Chooser) {
     );
 }
 
-fn magic_square(c: &mut chooser::lfchooser::Chooser) {
+fn magic_square(c: &mut chooser::bparchooser::Chooser) {
     let left = &mut vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
     let mut square = vec![];
     square.push(c.pick(left));
@@ -52,13 +54,32 @@ fn magic_square(c: &mut chooser::lfchooser::Chooser) {
     // c.stop(); //stop at first solution
 }
 fn main() {
-    chooser::bparchooser::run_choices(count_in_binary, 8);
-    // println!();
-    // chooser::run_fast_par_choices(magic_square, 15);
-    // println!();
-    // chooser::run_choices(|c|
+    // println!("BINARY");
+    // chooser::bparchooser::run_choices(count_in_binary, 8);
+    // println!("\nMAGIC SQUARES");
+    // chooser::bparchooser::run_choices(magic_square, 8);
+    println!("\nSUDOKU");
+
+    sudoku::solve_faster(
+        [
+
+            [0, 3, 0, 6, 0, 0, 0, 8, 0],
+            [0, 0, 9, 8, 0, 1, 7, 0, 2],
+            [0, 0, 0, 5, 0, 0, 0, 0, 6],
+            [0, 0, 0, 0, 1, 0, 0, 0, 3],
+            [0, 8, 5, 0, 0, 0, 9, 0, 4],
+            [0, 7, 0, 0, 2, 0, 0, 0, 0],
+            [0, 9, 0, 0, 0, 7, 0, 0, 0],
+            [0, 5, 3, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 9, 0, 0, 4, 7],
+        ],
+    );
+    
+
+
+    // // chooser::bparchooser::run_choices(|c| {
     // let st = std::time::Instant::now();
-    // for i in 1..30 {
+    // // for _i in 1..30 {
     //     sudoku::solve_faster(
     //         // c,
     //         [
@@ -84,7 +105,7 @@ fn main() {
     //             [0, 0, 0, 0, 9, 0, 0, 4, 7],
     //         ],
     //     );
-    // }
+    // // }
     // let el = st.elapsed().as_nanos() / 30;
     // println!("elapsed {el} nanos");
 }

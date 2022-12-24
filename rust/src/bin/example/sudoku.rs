@@ -60,7 +60,7 @@ fn candidates(indexes: &Indexes, row: usize, col: usize) -> Vec<u8> {
 
 pub fn solve_faster(board: [[u8; 9]; 9]) {
     let init_index = &index_board(board);
-    chooser::lfchooser::run_choices(
+    chooser::bparchooser::run_choices(
         |c| {
             solve_innner(c, &mut init_index.clone());
         },
@@ -68,7 +68,7 @@ pub fn solve_faster(board: [[u8; 9]; 9]) {
     )
 }
 
-fn solve_innner(c: &mut chooser::lfchooser::Chooser, indexes: &mut Indexes) {
+fn solve_innner(c: &mut chooser::bparchooser::Chooser, indexes: &mut Indexes) {
     for row in 0..9 {
         for col in 0..9 {
             if indexes.board[row][col] != 0 {
@@ -81,8 +81,8 @@ fn solve_innner(c: &mut chooser::lfchooser::Chooser, indexes: &mut Indexes) {
             add_cell(indexes, row, col, *c.choose(&cand));
         }
     }
-    // for row in 0..9 {
-    //     println!("{:?}", indexes.board[row]);
-    // }
+    for row in 0..9 {
+        println!("{:?}", indexes.board[row]);
+    }
     c.stop();
 }
