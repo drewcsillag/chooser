@@ -84,58 +84,6 @@ pub fn solve_faster(board: [[u8; 9]; 9]) {
     )
 }
 
-pub fn solve_faster_par(board: [[u8; 9]; 9]) {
-    let init_index = &index_board(board);
-    chooser::parchooser::run_choices(
-        |c| {
-            let indexes: &mut Indexes = &mut init_index.clone();
-            for row in 0..9 {
-                for col in 0..9 {
-                    if indexes.board[row][col] != 0 {
-                        continue;
-                    }
-                    let cand = candidates(&indexes, row, col);
-                    if cand.len() == 0 {
-                        return;
-                    }
-                    add_cell(indexes, row, col, *c.choose(&cand));
-                }
-            }
-            // for row in 0..9 {
-            //     println!("{:?}", indexes.board[row]);
-            // }
-            c.stop();
-        },
-        10,
-    )
-}
-
-pub fn solve_faster_bp(board: [[u8; 9]; 9]) {
-    let init_index = &index_board(board);
-    chooser::bparchooser::run_choices(
-        |c| {
-            let indexes: &mut Indexes = &mut init_index.clone();
-            for row in 0..9 {
-                for col in 0..9 {
-                    if indexes.board[row][col] != 0 {
-                        continue;
-                    }
-                    let cand = candidates(&indexes, row, col);
-                    if cand.len() == 0 {
-                        return;
-                    }
-                    add_cell(indexes, row, col, *c.choose(&cand));
-                }
-            }
-            // for row in 0..9 {
-            //     println!("{:?}", indexes.board[row]);
-            // }
-            c.stop();
-        },
-        10,
-    )
-}
-
 pub fn solve_faster_lf(board: [[u8; 9]; 9]) {
     let init_index = &index_board(board);
     chooser::lfchooser::run_choices(
@@ -156,6 +104,33 @@ pub fn solve_faster_lf(board: [[u8; 9]; 9]) {
             // for row in 0..9 {
             //     println!("{:?}", indexes.board[row]);
             // }
+            c.stop();
+        },
+        10,
+    )
+}
+
+pub fn solve_faster_lfmv(board: [[u8; 9]; 9]) {
+    let init_index = &index_board(board);
+    println!("HELLO?");
+    chooser::lfmvchooser::run_choices(
+        |c| {
+            let indexes: &mut Indexes = &mut init_index.clone();
+            for row in 0..9 {
+                for col in 0..9 {
+                    if indexes.board[row][col] != 0 {
+                        continue;
+                    }
+                    let cand = candidates(&indexes, row, col);
+                    if cand.len() == 0 {
+                        return;
+                    }
+                    add_cell(indexes, row, col, *c.choose(&cand));
+                }
+            }
+            for row in 0..9 {
+                println!("{:?}", indexes.board[row]);
+            }
             c.stop();
         },
         10,

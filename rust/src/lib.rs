@@ -1,7 +1,7 @@
 pub mod parchooser;
 pub mod lfchooser;
 pub mod bparchooser;
-
+pub mod lfmvchooser;
 // Single threaded implementationm
 pub struct Chooser<'a> {
     new_choices: Vec<usize>,
