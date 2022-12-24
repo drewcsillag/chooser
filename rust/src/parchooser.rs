@@ -1,4 +1,4 @@
-// Parallel implementation
+// A naive-ish Parallel implementation
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
@@ -26,7 +26,7 @@ pub struct MainToWorker {
     execution: Option<Vec<usize>>,
 }
 
-pub struct ParChooser<'a> {
+pub struct Chooser<'a> {
     threadno: usize,
     ch: &'a Sender<WorkerToMain>,
     new_choices: Vec<usize>,
@@ -35,9 +35,9 @@ pub struct ParChooser<'a> {
     newexecutions: Vec<Vec<usize>>,
 }
 
-impl ParChooser<'_> {
-    pub fn new(threadno: usize, ch: &Sender<WorkerToMain>, execution: Vec<usize>) -> ParChooser {
-        return ParChooser {
+impl Chooser<'_> {
+    pub fn new(threadno: usize, ch: &Sender<WorkerToMain>, execution: Vec<usize>) -> Chooser {
+        return Chooser {
             threadno,
             ch,
             new_choices: Vec::new(),
@@ -83,9 +83,9 @@ impl ParChooser<'_> {
     }
 }
 
-pub fn run_par_choices<'a, F>(f: F, numthreads: usize)
+pub fn run_choices<'a, F>(f: F, numthreads: usize)
 where
-    F: FnMut(&mut ParChooser) + std::marker::Send + Copy,
+    F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     thread::scope(|s| {
         let (maintx, mainrx) = channel();
@@ -134,7 +134,7 @@ fn worker_thread<F>(
     rx: Receiver<MainToWorker>,
     mut f: F,
 ) where
-    F: FnMut(&mut ParChooser) + std::marker::Send,
+    F: FnMut(&mut Chooser) + std::marker::Send,
 {
     loop {
         // CAVEAT ignoring failure
@@ -154,7 +154,7 @@ fn worker_thread<F>(
             }
             // we got a chunk of work to do
             MainCommandType::Go => {
-                let mut pc = ParChooser::new(threadno, &maintx, command.execution.unwrap());
+                let mut pc = Chooser::new(threadno, &maintx, command.execution.unwrap());
                 f(&mut pc);
                 if !pc.newexecutions.is_empty() {
                     match maintx.send(WorkerToMain {

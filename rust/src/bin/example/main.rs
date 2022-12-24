@@ -2,7 +2,7 @@ extern crate chooser;
 
 mod sudoku;
 
-fn count_in_binary(c: &mut chooser::lfchooser::FastParChooser) {
+fn count_in_binary(c: &mut chooser::bparchooser::Chooser) {
     let v = vec![0, 1];
     println!(
         "X: {0} {1} {2} {3}",
@@ -13,7 +13,7 @@ fn count_in_binary(c: &mut chooser::lfchooser::FastParChooser) {
     );
 }
 
-fn magic_square(c: &mut chooser::lfchooser::FastParChooser) {
+fn magic_square(c: &mut chooser::lfchooser::Chooser) {
     let left = &mut vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
     let mut square = vec![];
     square.push(c.pick(left));
@@ -52,39 +52,39 @@ fn magic_square(c: &mut chooser::lfchooser::FastParChooser) {
     // c.stop(); //stop at first solution
 }
 fn main() {
-    // chooser::run_fast_par_choices(count_in_binary, 8);
+    chooser::bparchooser::run_choices(count_in_binary, 8);
     // println!();
     // chooser::run_fast_par_choices(magic_square, 15);
     // println!();
     // chooser::run_choices(|c|
-    let st = std::time::Instant::now();
-    for i in 1..30 {
-        sudoku::solve_faster(
-            // c,
-            [
-                // [0,0,0, 0,0,0, 0,0,0],
-                // [0,0,0, 0,0,0, 0,0,0],
-                // [0,0,0, 0,0,0, 0,0,0],
+    // let st = std::time::Instant::now();
+    // for i in 1..30 {
+    //     sudoku::solve_faster(
+    //         // c,
+    //         [
+    //             // [0,0,0, 0,0,0, 0,0,0],
+    //             // [0,0,0, 0,0,0, 0,0,0],
+    //             // [0,0,0, 0,0,0, 0,0,0],
 
-                // [0,0,0, 0,0,0, 0,0,0],
-                // [0,0,1, 0,0,0, 0,0,0],
-                // [0,0,0, 0,0,0, 2,0,0],
+    //             // [0,0,0, 0,0,0, 0,0,0],
+    //             // [0,0,1, 0,0,0, 0,0,0],
+    //             // [0,0,0, 0,0,0, 2,0,0],
 
-                // [0,0,0, 0,0,0, 0,0,0],
-                // [0,0,0, 0,0,0, 0,0,0],
-                // [0,0,0, 0,0,0, 0,0,0]
-                [0, 3, 0, 6, 0, 0, 0, 8, 0],
-                [0, 0, 9, 8, 0, 1, 7, 0, 2],
-                [0, 0, 0, 5, 0, 0, 0, 0, 6],
-                [0, 0, 0, 0, 1, 0, 0, 0, 3],
-                [0, 8, 5, 0, 0, 0, 9, 0, 4],
-                [0, 7, 0, 0, 2, 0, 0, 0, 0],
-                [0, 9, 0, 0, 0, 7, 0, 0, 0],
-                [0, 5, 3, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 9, 0, 0, 4, 7],
-            ],
-        );
-    }
-    let el = st.elapsed().as_nanos() / 30;
-    println!("elapsed {el} nanos");
+    //             // [0,0,0, 0,0,0, 0,0,0],
+    //             // [0,0,0, 0,0,0, 0,0,0],
+    //             // [0,0,0, 0,0,0, 0,0,0]
+    //             [0, 3, 0, 6, 0, 0, 0, 8, 0],
+    //             [0, 0, 9, 8, 0, 1, 7, 0, 2],
+    //             [0, 0, 0, 5, 0, 0, 0, 0, 6],
+    //             [0, 0, 0, 0, 1, 0, 0, 0, 3],
+    //             [0, 8, 5, 0, 0, 0, 9, 0, 4],
+    //             [0, 7, 0, 0, 2, 0, 0, 0, 0],
+    //             [0, 9, 0, 0, 0, 7, 0, 0, 0],
+    //             [0, 5, 3, 0, 0, 0, 0, 0, 0],
+    //             [0, 0, 0, 0, 9, 0, 0, 4, 7],
+    //         ],
+    //     );
+    // }
+    // let el = st.elapsed().as_nanos() / 30;
+    // println!("elapsed {el} nanos");
 }

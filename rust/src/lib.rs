@@ -1,5 +1,6 @@
 pub mod parchooser;
 pub mod lfchooser;
+pub mod bparchooser;
 
 // Single threaded implementationm
 pub struct Chooser<'a> {

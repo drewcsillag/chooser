@@ -1,9 +1,9 @@
+// a lock-free implementation
 use crossbeam::atomic::AtomicCell;
 use std::hint;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-pub struct FastParChooser<'a> {
-    threadno: usize,
+pub struct Chooser<'a> {
     new_choices: Vec<usize>,
     pre_chosen: Vec<usize>,
     index: usize,
@@ -11,19 +11,17 @@ pub struct FastParChooser<'a> {
     timetodie: &'a Arc<AtomicBool>,
 }
 
-impl FastParChooser<'_> {
+impl Chooser<'_> {
     pub fn new(
-        threadno: usize,
         execution: Vec<usize>,
         timetodie: &Arc<AtomicBool>,
-    ) -> FastParChooser {
-        return FastParChooser {
-            threadno,
+    ) -> Chooser {
+        return Chooser {
             new_choices: Vec::new(),
             pre_chosen: execution,
             index: 0,
             newexecutions: Vec::new(),
-            timetodie: timetodie,
+            timetodie,
         };
     }
 
@@ -59,9 +57,9 @@ impl FastParChooser<'_> {
 
 use std::thread;
 
-pub fn run_fast_par_choices<'a, F>(mut f: F, numthreads: usize)
+pub fn run_choices<'a, F>(f: F, numthreads: usize)
 where
-    F: FnMut(&mut FastParChooser) + std::marker::Send + Copy,
+    F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     thread::scope(|s| {
         // The number of threads that are busy doing things
@@ -78,14 +76,14 @@ where
 
         let mut worker_handles = Vec::new();
 
-        for threadno in 0..numthreads {
+        for _threadno in 0..numthreads {
             let spin_lock = spin_lock_main.clone();
             let busy = busy_main.clone();
             let executions_cell = executions_cell_main.clone();
             let timetodie = timetodie_main.clone();
 
             worker_handles.push(s.spawn(move || {
-                fast_worker_thread(spin_lock, executions_cell, busy, threadno, timetodie, f);
+                fast_worker_thread(spin_lock, executions_cell, busy, timetodie, f);
             }));
         }
 
@@ -99,11 +97,10 @@ fn fast_worker_thread<F>(
     spin_lock: Arc<AtomicBool>,
     executions_cell: Arc<AtomicCell<Vec<Vec<usize>>>>,
     busy: Arc<AtomicUsize>,
-    threadno: usize,
     timetodie: Arc<AtomicBool>,
     mut f: F,
 ) where
-    F: FnMut(&mut FastParChooser) + std::marker::Send + Copy,
+    F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     loop {
         // ----- spinlock to get access to executions
@@ -121,7 +118,7 @@ fn fast_worker_thread<F>(
                 // ----- end of spinlock protected area
 
                 // OPTIMIZATION NOTE: could probably make a single mutable one and reset it...
-                let mut parc = FastParChooser::new(threadno, execution, &timetodie);
+                let mut parc = Chooser::new(execution, &timetodie);
                 f(&mut parc);
 
                 // if time to drop dead, die
