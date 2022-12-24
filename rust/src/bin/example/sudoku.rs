@@ -58,31 +58,106 @@ fn candidates(indexes: &Indexes, row: usize, col: usize) -> Vec<u8> {
         .collect();
 }
 
+
 pub fn solve_faster(board: [[u8; 9]; 9]) {
     let init_index = &index_board(board);
-    chooser::bparchooser::run_choices(
+    chooser::run_choices(
         |c| {
-            solve_innner(c, &mut init_index.clone());
+            let indexes: &mut Indexes = &mut init_index.clone();
+            for row in 0..9 {
+                for col in 0..9 {
+                    if indexes.board[row][col] != 0 {
+                        continue;
+                    }
+                    let cand = candidates(&indexes, row, col);
+                    if cand.len() == 0 {
+                        return;
+                    }
+                    add_cell(indexes, row, col, *c.choose(&cand));
+                }
+            }
+            // for row in 0..9 {
+            //     println!("{:?}", indexes.board[row]);
+            // }
+            c.stop();
+        }
+    )
+}
+
+pub fn solve_faster_par(board: [[u8; 9]; 9]) {
+    let init_index = &index_board(board);
+    chooser::parchooser::run_choices(
+        |c| {
+            let indexes: &mut Indexes = &mut init_index.clone();
+            for row in 0..9 {
+                for col in 0..9 {
+                    if indexes.board[row][col] != 0 {
+                        continue;
+                    }
+                    let cand = candidates(&indexes, row, col);
+                    if cand.len() == 0 {
+                        return;
+                    }
+                    add_cell(indexes, row, col, *c.choose(&cand));
+                }
+            }
+            // for row in 0..9 {
+            //     println!("{:?}", indexes.board[row]);
+            // }
+            c.stop();
         },
         10,
     )
 }
 
-fn solve_innner(c: &mut chooser::bparchooser::Chooser, indexes: &mut Indexes) {
-    for row in 0..9 {
-        for col in 0..9 {
-            if indexes.board[row][col] != 0 {
-                continue;
+pub fn solve_faster_bp(board: [[u8; 9]; 9]) {
+    let init_index = &index_board(board);
+    chooser::bparchooser::run_choices(
+        |c| {
+            let indexes: &mut Indexes = &mut init_index.clone();
+            for row in 0..9 {
+                for col in 0..9 {
+                    if indexes.board[row][col] != 0 {
+                        continue;
+                    }
+                    let cand = candidates(&indexes, row, col);
+                    if cand.len() == 0 {
+                        return;
+                    }
+                    add_cell(indexes, row, col, *c.choose(&cand));
+                }
             }
-            let cand = candidates(&indexes, row, col);
-            if cand.len() == 0 {
-                return;
+            // for row in 0..9 {
+            //     println!("{:?}", indexes.board[row]);
+            // }
+            c.stop();
+        },
+        10,
+    )
+}
+
+pub fn solve_faster_lf(board: [[u8; 9]; 9]) {
+    let init_index = &index_board(board);
+    chooser::lfchooser::run_choices(
+        |c| {
+            let indexes: &mut Indexes = &mut init_index.clone();
+            for row in 0..9 {
+                for col in 0..9 {
+                    if indexes.board[row][col] != 0 {
+                        continue;
+                    }
+                    let cand = candidates(&indexes, row, col);
+                    if cand.len() == 0 {
+                        return;
+                    }
+                    add_cell(indexes, row, col, *c.choose(&cand));
+                }
             }
-            add_cell(indexes, row, col, *c.choose(&cand));
-        }
-    }
-    for row in 0..9 {
-        println!("{:?}", indexes.board[row]);
-    }
-    c.stop();
+            // for row in 0..9 {
+            //     println!("{:?}", indexes.board[row]);
+            // }
+            c.stop();
+        },
+        10,
+    )
 }

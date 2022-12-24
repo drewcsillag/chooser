@@ -94,14 +94,14 @@ where
             let senders = senders_main.clone();
             let db1 = Arc::clone(&drop_barrier1);
             worker_handles.push(s.spawn(move || {
-                println!("{threadno}: starting");
+                // println!("{threadno}: starting");
                 let mut f = f;
                 let timeout = std::time::Duration::from_micros(1);
                 let mut next_send_to = (threadno + 1) % numthreads;
                 loop {
                     // if time to drop dead, die
                     if timetodie.load(Ordering::Acquire) {
-                        println!("{threadno}: 1,2,3) STOP");
+                        // println!("{threadno}: 1,2,3) STOP");
                         break;
                     }
                     let execution_res = receiver.recv_timeout(timeout);
@@ -122,25 +122,25 @@ where
                             // nothing in our queue, any threads busy?
                             let busy_threads = busy.load(Ordering::Acquire);
                             if busy_threads == 0 {
-                                println!("{threadno}: done - exit");
+                                // println!("{threadno}: done - exit");
                                 break;
                             }
                         }
                     }
                 }
                 db1.wait();
-                println!("{threadno}: 4) DROPPING MSPC seners");
+                // println!("{threadno}: 4) DROPPING MSPC seners");
                 drop(senders);
-                println!("{threadno}: 7) !! done");
+                // println!("{threadno}: 7) !! done");
             }));
         }
         drop(senders_main);
         let mut stopcount = 0;
         for handle in worker_handles.into_iter() {
-            println!("watiting for thread to stop");
+            // println!("watiting for thread to stop");
             let _x = handle.join();
             stopcount += 1;
-            println!("threads stopped {stopcount} of {numthreads}");
+            // println!("threads stopped {stopcount} of {numthreads}");
         }
     })
 }
