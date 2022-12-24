@@ -59,7 +59,7 @@ fn main() {
     // println!("\nMAGIC SQUARES");
     // chooser::bparchooser::run_choices(magic_square, 8);
     println!("\nSUDOKU");
-    let n = 10;
+    let n = 100;
 
     let board = [
         [0, 3, 0, 6, 0, 0, 0, 8, 0],
@@ -81,16 +81,9 @@ fn main() {
     println!("LFXX elapsed {el} nanos");
 
     let st = std::time::Instant::now();
-    for _i in 0..n {
-        sudoku::solve_faster_lfmv(board);
+    for _i in 1..n {
+        sudoku::solve_faster(board);
     }
     let el = st.elapsed().as_nanos() / n;
-    println!("LFMV elapsed {el} nanos");
-
-    // let st = std::time::Instant::now();
-    // for _i in 1..n {
-    //     sudoku::solve_faster(board);
-    // }
-    // let el = st.elapsed().as_nanos() / n;
-    // println!("ST elapsed {el} nanos");
+    println!("ST elapsed {el} nanos");
 }

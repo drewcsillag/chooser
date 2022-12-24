@@ -3,6 +3,8 @@ use crossbeam::atomic::AtomicCell;
 use std::hint;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::thread;
+
 pub struct Chooser<'a> {
     new_choices: Vec<usize>,
     pre_chosen: Vec<usize>,
@@ -12,10 +14,7 @@ pub struct Chooser<'a> {
 }
 
 impl Chooser<'_> {
-    pub fn new(
-        execution: Vec<usize>,
-        timetodie: &Arc<AtomicBool>,
-    ) -> Chooser {
+    pub fn new(execution: Vec<usize>, timetodie: &Arc<AtomicBool>) -> Chooser {
         return Chooser {
             new_choices: Vec::new(),
             pre_chosen: execution,
@@ -55,21 +54,18 @@ impl Chooser<'_> {
     }
 }
 
-use std::thread;
-
 pub fn run_choices<'a, F>(f: F, numthreads: usize)
 where
     F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     thread::scope(|s| {
         // The number of threads that are busy doing things
-        let busy_main = Arc::new(AtomicUsize::new(0));
+        let busy_main = Arc::new(AtomicUsize::new(1));
 
         // the boolean to make the spinlock with
         let spin_lock_main = Arc::new(AtomicBool::new(false));
         // The executions list
-        let raw_exec = vec![vec![]];
-        let executions_cell_main = Arc::new(crossbeam::atomic::AtomicCell::new(raw_exec));
+        let executions_cell_main = Arc::new(AtomicCell::new(vec![vec![]]));
 
         // Bail early!
         let timetodie_main = Arc::new(AtomicBool::new(false));
@@ -102,42 +98,32 @@ fn fast_worker_thread<F>(
 ) where
     F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
+    let mut parc = Chooser::new(vec![], &timetodie);
+
     loop {
         // if time to drop dead, die
         if timetodie.load(Ordering::Acquire) {
             break;
         }
 
-        // ----- spinlock to get access to executions
-        wait_on_spin_lock(&spin_lock);
-        let execution = pop_execution(&executions_cell);
-
-        match execution {
+        match pop_execution(&executions_cell, &spin_lock) {
             Option::Some(execution) => {
-                // we're busy - have to do this inside, because better to say we're busier
-                // than we might be (compared to where we decrement it ouside the spinlock)
-                // lest we bail out prematurely
-                busy.fetch_add(1, Ordering::Acquire);
-                spin_lock.store(false, Ordering::Release);
-                // ----- end of spinlock protected area
-
-                // OPTIMIZATION NOTE: could probably make a single mutable one and reset it...
-                let mut parc = Chooser::new(execution, &timetodie);
+                parc.new_choices.clear();
+                parc.pre_chosen = execution;
+                parc.index = 0;
                 f(&mut parc);
 
-                // ----- spinlock to get acces to executions
-                wait_on_spin_lock(&spin_lock);
-                extend_executions(&executions_cell, parc.newexecutions);
-                spin_lock.store(false, Ordering::Release);
-                // ----- end of spinlock protected area
+                let num_execs = parc.newexecutions.len();
+                if num_execs == 0 {
+                    // decrement the one we just finished processing
+                    busy.fetch_sub(1, Ordering::Acquire);
+                    continue;
+                }
+                extend_executions(&executions_cell, &mut parc.newexecutions, &spin_lock);
 
-                // we're not busy any more
-                busy.fetch_sub(1, Ordering::Acquire);
+                busy.fetch_add(num_execs - 1, Ordering::Acquire);
             }
             Option::None => {
-                spin_lock.store(false, Ordering::Release);
-                // ----- end of spinlock protected area
-
                 let num_busy_threads = busy.load(Ordering::Acquire);
 
                 if num_busy_threads == 0 {
@@ -150,13 +136,26 @@ fn fast_worker_thread<F>(
 
 fn extend_executions(
     executions_cell: &Arc<AtomicCell<Vec<Vec<usize>>>>,
-    newexecutions: Vec<Vec<usize>>,
+    newexecutions: &mut Vec<Vec<usize>>,
+    spin_lock: &Arc<AtomicBool>,
 ) {
-    unsafe { (&mut *(executions_cell.as_ptr())).extend(newexecutions.into_iter()) }
+    wait_on_spin_lock(&spin_lock);
+
+    unsafe {
+        (&mut *(executions_cell.as_ptr())).append(newexecutions);
+    }
+    spin_lock.store(false, Ordering::Release);
 }
 
-fn pop_execution(executions_cell: &Arc<AtomicCell<Vec<Vec<usize>>>>) -> Option<Vec<usize>> {
-    unsafe { (&mut *(executions_cell.as_ptr())).pop() }
+fn pop_execution(
+    executions_cell: &Arc<AtomicCell<Vec<Vec<usize>>>>,
+    spin_lock: &Arc<AtomicBool>,
+) -> Option<Vec<usize>> {
+    wait_on_spin_lock(&spin_lock);
+
+    let ret = unsafe { (&mut *(executions_cell.as_ptr())).pop() };
+    spin_lock.store(false, Ordering::Release);
+    ret
 }
 
 fn wait_on_spin_lock(spinlock: &Arc<AtomicBool>) {

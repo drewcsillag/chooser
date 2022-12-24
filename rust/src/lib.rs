@@ -1,7 +1,6 @@
-pub mod parchooser;
-pub mod lfchooser;
 pub mod bparchooser;
-pub mod lfmvchooser;
+pub mod lfchooser;
+pub mod parchooser;
 // Single threaded implementationm
 pub struct Chooser<'a> {
     new_choices: Vec<usize>,
@@ -59,5 +58,3 @@ where
         f(&mut Chooser::new(&mut executions, execution));
     }
 }
-
-
