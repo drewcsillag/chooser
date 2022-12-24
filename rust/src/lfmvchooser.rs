@@ -62,7 +62,7 @@ where
     F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     thread::scope(|s| {
-        println!("M: starting scope");
+        // println!("M: starting scope");
         // The number of threads that are busy doing things + items in the executions
         let busy_main = Arc::new(AtomicUsize::new(0));
         busy_main.fetch_add(1, Ordering::AcqRel);
@@ -100,7 +100,7 @@ where
             let timetodie = timetodie_main.clone();
 
             worker_handles.push(s.spawn(move || {
-                println!("{threadno}: starting");
+                // println!("{threadno}: starting");
                 fast_worker_thread(threadno, numthreads, spin_locks.into(), executions_cells, busy, timetodie, f);
             }));
         }
@@ -124,9 +124,11 @@ fn fast_worker_thread<F>(
 {
     let mut next_e = (threadno + 1) % numthreads;
     loop {
+        std::hint::spin_loop();
+
         // if time to drop dead, die
         if timetodie.load(Ordering::Acquire) {
-            println!("STOP!");
+            // println!("STOP!");
             break;
         }
         
@@ -138,28 +140,24 @@ fn fast_worker_thread<F>(
 
         match execution {
             Option::Some(execution) => {
-                println!("{threadno}: got an execution");
+                // println!("{threadno}: got an execution");
                 // OPTIMIZATION NOTE: could probably make a single mutable one and reset it...
                 let mut parc = Chooser::new(execution, &timetodie);
                 f(&mut parc);
 
+                busy.fetch_add(parc.newexecutions.len(), Ordering::Acquire);
+                // ----- spinlock to get acces to executions
+                wait_on_spin_lock(&spin_locks[next_e]);
+                extend_executions(&executions_cells[next_e], parc.newexecutions);
+                spin_locks[next_e].store(false, Ordering::Release);
+                // ----- end of spinlock protected area
 
-                for i in 0..parc.newexecutions.len() {
-                    // ----- spinlock to get acces to executions
-                    wait_on_spin_lock(&spin_locks[next_e]);
-                    busy.fetch_add(1, Ordering::Acquire);
-                    append_execution(&executions_cells[next_e], parc.newexecutions.pop().unwrap());
-                    spin_locks[next_e].store(false, Ordering::Release);
-                    // ----- end of spinlock protected area
-    
-                    next_e = (next_e + 1) % numthreads; 
+                next_e = (next_e + 1) % numthreads; 
 
-                }
                 busy.fetch_sub(1, Ordering::Acquire);
             }
             Option::None => {
                 let num_busy = busy.load(Ordering::Acquire);
-                println!("{threadno}: No executions busy is {num_busy}");
 
                 if num_busy == 0 {
                     break; // all done: no executions and no one busy
@@ -169,15 +167,22 @@ fn fast_worker_thread<F>(
     }
 }
 
-fn append_execution(
-    executions_cell: &AtomicCell<Vec<Vec<usize>>>,
-    newexecution: Vec<usize>,
-) {
-    unsafe { (&mut *(executions_cell.as_ptr())).push(newexecution) }
-}
+// fn append_execution(
+//     executions_cell: &AtomicCell<Vec<Vec<usize>>>,
+//     newexecution: Vec<usize>,
+// ) {
+//     unsafe { (&mut *(executions_cell.as_ptr())).push(newexecution) }
+// }
 
 fn pop_execution(executions_cell: &AtomicCell<Vec<Vec<usize>>>) -> Option<Vec<usize>> {
     unsafe { (&mut *(executions_cell.as_ptr())).pop() }
+}
+
+fn extend_executions(
+    executions_cell: &AtomicCell<Vec<Vec<usize>>>,
+    newexecutions: Vec<Vec<usize>>,
+) {
+    unsafe { (&mut *(executions_cell.as_ptr())).extend(newexecutions.into_iter()) }
 }
 
 fn wait_on_spin_lock(spinlock: &AtomicBool) {

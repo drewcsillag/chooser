@@ -103,9 +103,13 @@ fn fast_worker_thread<F>(
     F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     loop {
+        // if time to drop dead, die
+        if timetodie.load(Ordering::Acquire) {
+            break;
+        }
+
         // ----- spinlock to get access to executions
         wait_on_spin_lock(&spin_lock);
-
         let execution = pop_execution(&executions_cell);
 
         match execution {
@@ -120,11 +124,6 @@ fn fast_worker_thread<F>(
                 // OPTIMIZATION NOTE: could probably make a single mutable one and reset it...
                 let mut parc = Chooser::new(execution, &timetodie);
                 f(&mut parc);
-
-                // if time to drop dead, die
-                if timetodie.load(Ordering::Acquire) {
-                    break;
-                }
 
                 // ----- spinlock to get acces to executions
                 wait_on_spin_lock(&spin_lock);

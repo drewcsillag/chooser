@@ -112,7 +112,7 @@ pub fn solve_faster_lf(board: [[u8; 9]; 9]) {
 
 pub fn solve_faster_lfmv(board: [[u8; 9]; 9]) {
     let init_index = &index_board(board);
-    println!("HELLO?");
+    // println!("HELLO?");
     chooser::lfmvchooser::run_choices(
         |c| {
             let indexes: &mut Indexes = &mut init_index.clone();
@@ -128,9 +128,9 @@ pub fn solve_faster_lfmv(board: [[u8; 9]; 9]) {
                     add_cell(indexes, row, col, *c.choose(&cand));
                 }
             }
-            for row in 0..9 {
-                println!("{:?}", indexes.board[row]);
-            }
+            // for row in 0..9 {
+            //     println!("{:?}", indexes.board[row]);
+            // }
             c.stop();
         },
         10,
