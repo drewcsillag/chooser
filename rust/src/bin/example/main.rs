@@ -78,7 +78,7 @@ fn main() {
         sudoku::solve_faster_lf(board);
     }
     let el = st.elapsed().as_nanos() / n;
-    println!("LFXX elapsed {el} nanos");
+    println!("LF elapsed {el} nanos");
 
     let st = std::time::Instant::now();
     for _i in 1..n {

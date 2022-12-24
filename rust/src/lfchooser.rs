@@ -59,18 +59,14 @@ where
     F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     thread::scope(|s| {
-        // The number of threads that are busy doing things
+        // The number of in progress/queued executions
         let busy_main = Arc::new(AtomicUsize::new(1));
-
         // the boolean to make the spinlock with
         let spin_lock_main = Arc::new(AtomicBool::new(false));
         // The executions list
         let executions_cell_main = Arc::new(AtomicCell::new(vec![vec![]]));
-
         // Bail early!
         let timetodie_main = Arc::new(AtomicBool::new(false));
-
-        let mut worker_handles = Vec::new();
 
         for _threadno in 0..numthreads {
             let spin_lock = spin_lock_main.clone();
@@ -78,13 +74,9 @@ where
             let executions_cell = executions_cell_main.clone();
             let timetodie = timetodie_main.clone();
 
-            worker_handles.push(s.spawn(move || {
+            s.spawn(move || {
                 fast_worker_thread(spin_lock, executions_cell, busy, timetodie, f);
-            }));
-        }
-
-        for handle in worker_handles.into_iter() {
-            let _x = handle.join();
+            });
         }
     })
 }
@@ -121,12 +113,11 @@ fn fast_worker_thread<F>(
                 }
                 extend_executions(&executions_cell, &mut parc.newexecutions, &spin_lock);
 
+                // add in the length of times, -1 for the one we just did
                 busy.fetch_add(num_execs - 1, Ordering::Acquire);
             }
             Option::None => {
-                let num_busy_threads = busy.load(Ordering::Acquire);
-
-                if num_busy_threads == 0 {
+                if busy.load(Ordering::Acquire) == 0 {
                     break; // all done: no executions and no one busy
                 }
             }
@@ -140,7 +131,6 @@ fn extend_executions(
     spin_lock: &Arc<AtomicBool>,
 ) {
     wait_on_spin_lock(&spin_lock);
-
     unsafe {
         (&mut *(executions_cell.as_ptr())).append(newexecutions);
     }
@@ -152,16 +142,15 @@ fn pop_execution(
     spin_lock: &Arc<AtomicBool>,
 ) -> Option<Vec<usize>> {
     wait_on_spin_lock(&spin_lock);
-
     let ret = unsafe { (&mut *(executions_cell.as_ptr())).pop() };
     spin_lock.store(false, Ordering::Release);
+
     ret
 }
 
 fn wait_on_spin_lock(spinlock: &Arc<AtomicBool>) {
     loop {
-        let res = spinlock.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed);
-        match res {
+        match spinlock.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed) {
             Result::Ok(_) => {
                 break;
             }
