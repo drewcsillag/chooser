@@ -9,7 +9,7 @@ pub struct Chooser<'a> {
     new_choices: Vec<usize>,
     pre_chosen: Vec<usize>,
     index: usize,
-    newexecutions: Vec<Vec<usize>>,
+    new_executions: Vec<Vec<usize>>,
     timetodie: &'a Arc<AtomicBool>,
 }
 
@@ -19,7 +19,7 @@ impl Chooser<'_> {
             new_choices: Vec::new(),
             pre_chosen: execution,
             index: 0,
-            newexecutions: Vec::new(),
+            new_executions: Vec::new(),
             timetodie,
         };
     }
@@ -30,11 +30,14 @@ impl Chooser<'_> {
             self.index = self.index + 1;
             return ret;
         }
+
+        let mut cur_exec = self.pre_chosen.to_owned();
+        cur_exec.append(&mut self.new_choices.to_owned());
+
         for choice in 1..num_items {
-            let mut new_exec = self.pre_chosen.to_vec().to_owned();
-            new_exec.append(&mut self.new_choices.to_owned());
+            let mut new_exec = cur_exec.to_owned();
             new_exec.push(choice);
-            self.newexecutions.push(new_exec);
+            self.new_executions.push(new_exec);
         }
         self.new_choices.push(0);
 
@@ -59,13 +62,13 @@ where
     F: FnMut(&mut Chooser) + std::marker::Send + Copy,
 {
     thread::scope(|s| {
-        // The number of in progress/queued executions
+        // The number of in progress or queued executions
         let busy_main = Arc::new(AtomicUsize::new(1));
-        // the boolean to make the spinlock with
+        // the spinlock to protect the executions list
         let spin_lock_main = Arc::new(AtomicBool::new(false));
         // The executions list
         let executions_cell_main = Arc::new(AtomicCell::new(vec![vec![]]));
-        // Bail early!
+        // Bail early
         let timetodie_main = Arc::new(AtomicBool::new(false));
 
         for _threadno in 0..numthreads {
@@ -92,6 +95,7 @@ fn fast_worker_thread<F>(
 {
     let mut parc = Chooser::new(vec![], &timetodie);
 
+    let nn = busy.as_ref();
     loop {
         // if time to drop dead, die
         if timetodie.load(Ordering::Acquire) {
@@ -105,19 +109,19 @@ fn fast_worker_thread<F>(
                 parc.index = 0;
                 f(&mut parc);
 
-                let num_execs = parc.newexecutions.len();
+                let num_execs = parc.new_executions.len();
                 if num_execs == 0 {
                     // decrement the one we just finished processing
-                    busy.fetch_sub(1, Ordering::Acquire);
-                    continue;
-                }
-                extend_executions(&executions_cell, &mut parc.newexecutions, &spin_lock);
+                    nn.fetch_sub(1, Ordering::Acquire);
+                } else {
+                    extend_executions(&executions_cell, &mut parc.new_executions, &spin_lock);
 
-                // add in the length of times, -1 for the one we just did
-                busy.fetch_add(num_execs - 1, Ordering::Acquire);
+                    // add in the length of times, -1 for the one we just did
+                    nn.fetch_add(num_execs - 1, Ordering::Acquire);
+                }
             }
             Option::None => {
-                if busy.load(Ordering::Acquire) == 0 {
+                if nn.load(Ordering::Acquire) == 0 {
                     break; // all done: no executions and no one busy
                 }
             }

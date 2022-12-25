@@ -76,9 +76,9 @@ pub fn solve_faster(board: [[u8; 9]; 9]) {
                     add_cell(indexes, row, col, *c.choose(&cand));
                 }
             }
-            // for row in 0..9 {
-            //     println!("{:?}", indexes.board[row]);
-            // }
+            for row in 0..9 {
+                println!("{:?}", indexes.board[row]);
+            }
             c.stop();
         }
     )
