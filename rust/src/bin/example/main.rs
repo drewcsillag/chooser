@@ -77,28 +77,28 @@ fn main() {
     sudoku::solve_faster_lf(board);
     println!("MAZE");
 
-    let maze = [
+    let maze = vec![
         //0   1   2   3   4   5   6   7   8  9   10  11
-        ['X','X','X','X','X','X','X','X','X','X','X','X'], //0
-        ['X',' ',' ',' ','X',' ',' ',' ',' ',' ',' ','>'], //1
-        ['X',' ','X','X','X','X','X',' ','X','X','X','X'], //2
-        ['X',' ','X',' ',' ',' ','X',' ','X',' ',' ','X'], //3
-        ['X',' ',' ',' ','X',' ',' ',' ','X',' ','X','X'], //4 
-        ['X','X',' ','X',' ',' ','X',' ',' ',' ','X','X'], //5
-        ['X',' ','X','X','X','X','X','X','X',' ',' ','X'], //6
-        ['X',' ','X',' ',' ','X',' ',' ','X','X',' ','X'], //7
-        ['X',' ','X','X',' ','X','X',' ',' ',' ',' ','X'], //8
-        ['X',' ','X','X',' ',' ',' ',' ','X',' ',' ','X'], //9
-        ['X',' ',' ',' ',' ','X',' ','X','X','X',' ','X'], //10
-        ['X','^','X','X','X','X','X','X','X','X','X','X'], //11
+        vec!['X','X','X','X','X','X','X','X','X','X','X','X'], //0
+        vec!['X',' ',' ',' ','X',' ',' ',' ',' ',' ',' ','>'], //1
+        vec!['X',' ','X','X','X','X','X',' ','X','X','X','X'], //2
+        vec!['X',' ','X',' ',' ',' ','X',' ','X',' ',' ','X'], //3
+        vec!['X',' ',' ',' ','X',' ',' ',' ','X',' ','X','X'], //4 
+        vec!['X','X',' ','X',' ',' ','X',' ',' ',' ','X','X'], //5
+        vec!['X',' ','X','X','X','X','X','X','X',' ',' ','X'], //6
+        vec!['X',' ','X',' ',' ','X',' ',' ','X','X',' ','X'], //7
+        vec!['X',' ','X','X',' ','X','X',' ',' ',' ',' ','X'], //8
+        vec!['X',' ','X','X',' ',' ',' ',' ','X',' ',' ','X'], //9
+        vec!['X',' ',' ',' ',' ','X',' ','X','X','X',' ','X'], //10
+        vec!['X','^','X','X','X','X','X','X','X','X','X','X'], //11
 
     ];
-    chooser::run_choices(|c| maze_solve(c, maze));
+    chooser::run_choices(move |c| maze_solve(c, &maze));
 }
 
-fn find_start(maze: [[char; 12]; 12]) -> (usize, usize) {
-    for row in 0..12 {
-        for col in 0..12 {
+fn find_start(maze: &Vec<Vec<char>>) -> (usize, usize) {
+    for row in 0..maze.len() {
+        for col in 0..maze[row].len() {
             if maze[row][col] == '^' {
                 return (row, col);
             }
@@ -107,32 +107,26 @@ fn find_start(maze: [[char; 12]; 12]) -> (usize, usize) {
     return (0, 0);
 }
 
-fn maze_solve(ch: &mut chooser::Chooser, omaze: [[char; 12]; 12])  {
+fn maze_solve(ch: &mut chooser::Chooser, omaze: &Vec<Vec<char>>)  {
     println!("SOLVE");
-    let (mut r, mut c) = find_start(omaze);
+    let (mut r, mut c) = find_start(&omaze);
 
-    let path = vec![(r, c)];
-    let mut maze = omaze.clone();
+    let mut maze = omaze.to_owned();
 
     loop {
         println!("current {0}, {1}", r, c);
-        let candidates = find_maze_candidates(maze, r, c);
+        let candidates = find_maze_candidates(&maze, r, c);
         if candidates.is_empty() {
             println!("FAIL");
-            printboard(maze);
+            printboard(&maze);
             return;
         }
         (r, c) = *ch.choose(&candidates);
 
         if maze[r][c] == '>' {
-            println!("Found path!");
-            for v in &path {
-                println!(" {0} {1}", v.0, v.1);
-            }
-
             printboard(omaze);
             println!("solved");
-            printboard(maze);
+            printboard(&maze);
             ch.stop();
             return;
         }
@@ -140,28 +134,27 @@ fn maze_solve(ch: &mut chooser::Chooser, omaze: [[char; 12]; 12])  {
     }
 }
 
-
-
-fn printboard(m: [[char;12];12]) {
-    for r in 0..12 {
-        println!("{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11}",
-            m[r][0], m[r][1],  m[r][2],
-            m[r][3], m[r][4],  m[r][5],
-            m[r][6], m[r][7],  m[r][8],
-            m[r][9], m[r][10], m[r][11]);
+fn printboard(m: &Vec<Vec<char>>) {
+    for r in 0..m.len() {
+        for c in 0..m[r].len() {
+            print!("{0} ", m[r][c]);
+        }
+        println!();
     }
 }
 
-fn find_maze_candidates(maze: [[char; 12]; 12], r: usize, c: usize) -> Vec<(usize, usize)> {
+fn find_maze_candidates(maze: &Vec<Vec<char>>, r: usize, c: usize) -> Vec<(usize, usize)> {
     let mut rvec = Vec::new();
 
-    if r + 1 < 12 && (maze[r+1][c] == ' ' || maze[r+1][c] == '>') {
+    // if we support rows of different lengths, we should check that the respective
+    // new r's and c's in the vec are correct.
+    if r + 1 < maze.len() && (maze[r+1][c] == ' ' || maze[r+1][c] == '>') {
         rvec.push((r+1, c));
     }
     if r!=0 && (maze[r-1][c] == ' ' || maze[r-1][c] == '>') {
         rvec.push((r-1, c))
     }
-    if c+1 < 12 && (maze[r][c+1] == ' ' || maze[r][c+1] == '>') {
+    if c+1 < maze[0].len() && (maze[r][c+1] == ' ' || maze[r][c+1] == '>') {
         rvec.push((r,c+1));
     }
     if c != 0 && (maze[r][c-1] == ' ' || maze[r][c-1] == '>') {
