@@ -97,7 +97,7 @@ def test_solve_magic_square(c: Chooser, counterbox: List[int]) -> None:
 
 
 def test_binary_counter(c: Chooser) -> None:
-    print([c.choose([0, 1, 2]) for i in range(3)])
+    print([c.choose([0, 1]) for i in range(3)])
 
 
 if __name__ == "__main__":
