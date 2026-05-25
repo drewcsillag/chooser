@@ -1,13 +1,12 @@
 package com.thecsillags.choice;
 
-import com.google.common.collect.Lists;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ParallelChooserTest {
     /**
@@ -20,7 +19,7 @@ public class ParallelChooserTest {
                 chooser.chooseArg("0", "1") + chooser.chooseArg("0", "1") + chooser.chooseArg("0", "1")),
                 () -> Executors.newFixedThreadPool(10));
         results.sort(Comparator.naturalOrder());
-        final List<String> expected = Lists.newArrayList(
+        final List<String> expected = Arrays.asList(
                 "000", "001", "010", "011",
                 "100", "101", "110", "111");
         assertEquals(expected, results);
@@ -31,7 +30,7 @@ public class ParallelChooserTest {
      * to be isomorphic, but that's not relevant for what I care about here.
      */
     private void magicSquare(final ParallelChooser chooser, final List<String> results) {
-        final List<Integer> l = Lists.newArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        final List<Integer> l = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
         final List<Integer> square = new ArrayList<>();
 
         // pick the first row -- using .pick()  as it will remove the item from l that it returns, so it saves
@@ -102,8 +101,8 @@ public class ParallelChooserTest {
                 "8 1 6 3 5 7 4 9 2",
                 "8 3 4 1 5 9 6 7 2"
         );
-        final List<String> results = Collections.synchronizedList(Lists.newArrayList());
-        ParallelChooser.run((c)-> magicSquare(c, results), () -> Executors.newFixedThreadPool(10));
+        final List<String> results = Collections.synchronizedList(new ArrayList<>());
+        ParallelChooser.run((c) -> magicSquare(c, results), () -> Executors.newFixedThreadPool(10));
         results.sort(Comparator.naturalOrder());
         assertEquals(expected, results);
     }

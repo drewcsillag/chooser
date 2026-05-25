@@ -1,10 +1,11 @@
 package com.thecsillags.choice;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -13,9 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * A more lengthy test of the parallel chooser.
@@ -27,7 +27,7 @@ import static org.junit.Assert.assertArrayEquals;
  * exposition of the simplicity of chooser usage, and a simple sudoku solver.
  */
 public class SudokuTest {
-    private static final List<Integer> CANDIDATES = newArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    private static final List<Integer> CANDIDATES = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
     /**
      * Using a Parallel Chooser, solve the sudoku puzzle.
@@ -122,9 +122,9 @@ public class SudokuTest {
 
         private Puzzle(final int[][] puzzle) {
             this.puzzle = puzzle;
-            this.rows = IntStream.range(0, 9).mapToObj(ignored -> Sets.<Integer>newHashSet()).collect(toList());
-            this.columns = IntStream.range(0, 9).mapToObj(ignored -> Sets.<Integer>newHashSet()).collect(toList());
-            this.boxes = IntStream.range(0, 9).mapToObj(ignored -> Sets.<Integer>newHashSet()).collect(toList());
+            this.rows = IntStream.range(0, 9).mapToObj(ignored -> new HashSet<Integer>()).collect(toList());
+            this.columns = IntStream.range(0, 9).mapToObj(ignored -> new HashSet<Integer>()).collect(toList());
+            this.boxes = IntStream.range(0, 9).mapToObj(ignored -> new HashSet<Integer>()).collect(toList());
 
             // load the puzzle as it is into the indexes
             for (int row = 0; row < 9; row++) {
@@ -162,7 +162,7 @@ public class SudokuTest {
         private List<Integer> getCandidates(final int row, final int col) {
             // If leftovers, rows, columns, or boxes were big, it might be better to use a Set here, but for small N,
             // the simpler thing is generally faster.
-            final List<Integer> leftovers = Lists.newArrayList(CANDIDATES);
+            final List<Integer> leftovers = new ArrayList<>(CANDIDATES);
             leftovers.removeAll(rows.get(row));
             leftovers.removeAll(columns.get(col));
             leftovers.removeAll(boxes.get(getBoxIndex(row, col)));
